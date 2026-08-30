@@ -57,28 +57,32 @@ JSON files under `data/runs/` for MVP. Postgres later (`DATABASE_URL`).
 `loadRun` / `listRuns` / `listRunSummaries` / `saveRun` in `src/persist.ts`.
 Run ids must match `[a-zA-Z0-9._-]` before any path join.
 
-## Control API (Session 3)
+## Control API (Session 3–4)
 `src/api.ts` — Node `http` server, no extra runtime dependency.
 Default bind: `127.0.0.1:8787`.
 Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`.
 CORS origin default `http://localhost:3000`.
+Auth (Session 4): optional `AETHER_API_TOKEN`. When set, require `X-Aether-Token` or `Authorization: Bearer`. `/health` and `OPTIONS` stay open. Compare uses timing-safe equality.
 
-## Dashboard (Session 3)
+## Dashboard (Session 3–4)
 `apps/web` Next.js 14 app router. Client pages call the control API. Approve/reject and start-run from the UI.
+Token: `NEXT_PUBLIC_AETHER_API_TOKEN` or localStorage `aether.apiToken` (local operator convenience).
 
-## Built-in tools (Session 2)
+## Built-in tools
 - Stubs: `research_stub`, `summarize_stub`, `create_ticket_stub` (irreversible), `notify_stub`
 - Real: `http_request` (http/https only, 10s default timeout)
 - Real (env-gated): `github_create_issue` (irreversible; `GITHUB_TOKEN` or `GH_TOKEN`)
+- Real (env-gated): `slack_notify` (`SLACK_WEBHOOK_URL` or `args.webhookUrl`)
 
 ## MVP Scope (first 4–6 weeks of daily sessions)
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
 2. Simple sequential execution engine — **done v0.1**; parallel next
-3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues **done**
-4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done**
-5. Basic Next.js UI showing runs + audit trail — **skeleton done Session 3**
+3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues + Slack webhook **done**
+4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending token)**
+5. Basic Next.js UI showing runs + audit trail — **skeleton done Session 3; token field Session 4**
 6. Local persistence (JSON files) → later Postgres
 7. HITL resume — **CLI done Session 2; API + UI Session 3**
+8. API auth gate — **Session 4**
 
 ## Non-goals for MVP
 - Full multi-tenancy
@@ -91,4 +95,6 @@ CORS origin default `http://localhost:3000`.
 - Interpolation is limited to `{{memory.<key>}}` and `{{run.id}}` in step args.
 - HITL pause is a first-class run status, not an exception/`failed`.
 - No secrets in repo. Connectors read env at execute time.
-- UI talks only to the loopback API. API is unauthenticated in Session 3 (loopback bind is the control).
+- UI talks only to the loopback API.
+- Session 4: API may be token-gated; loopback bind is still the network control.
+- `wf.github` is HITL and uses env-configured owner/repo; it does not embed tokens.

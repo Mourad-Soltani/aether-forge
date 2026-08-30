@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { configuredApiToken, isAuthorized } from "./auth.js";
 import { executeWorkflow, resumeRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -8,7 +9,7 @@ export const API_PORT = Number(process.env.AETHER_API_PORT ?? 8787);
 const CORS = {
   "Access-Control-Allow-Origin": process.env.AETHER_CORS_ORIGIN ?? "http://localhost:3000",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Aether-Token",
 };
 
 function json(res: ServerResponse, status: number, body: unknown): void {
@@ -62,7 +63,16 @@ export async function handleRequest(
 
   try {
     if (method === "GET" && pathname === "/health") {
-      json(res, 200, { ok: true, service: "aether-forge-api" });
+      json(res, 200, {
+        ok: true,
+        service: "aether-forge-api",
+        authRequired: Boolean(configuredApiToken()),
+      });
+      return;
+    }
+
+    if (!isAuthorized(req)) {
+      json(res, 401, { error: "unauthorized", hint: "Send X-Aether-Token or Authorization: Bearer" });
       return;
     }
 
@@ -123,7 +133,8 @@ export function startApiServer(port = API_PORT) {
     void handleRequest(req, res);
   });
   server.listen(port, "127.0.0.1", () => {
-    console.log(`Aether Forge API listening on http://127.0.0.1:${port}`);
+    const gated = configuredApiToken() ? "token required" : "open (set AETHER_API_TOKEN)";
+    console.log(`Aether Forge API listening on http://127.0.0.1:${port} (${gated})`);
   });
   return server;
 }

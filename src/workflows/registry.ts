@@ -1,6 +1,7 @@
 import type { Agent, Workflow } from "../types.js";
 import { helloAgents, helloWorkflow, hitlWorkflow } from "./hello.js";
 import { httpDemoAgents, httpDemoWorkflow } from "./http-demo.js";
+import { githubDemoAgents, githubDemoWorkflow } from "./github-demo.js";
 
 export interface RegisteredWorkflow {
   workflow: Workflow;
@@ -14,6 +15,8 @@ export const workflowRegistry: Record<string, RegisteredWorkflow> = {
   hitl: { workflow: hitlWorkflow, agents: helloAgents },
   [httpDemoWorkflow.id]: { workflow: httpDemoWorkflow, agents: httpDemoAgents },
   http: { workflow: httpDemoWorkflow, agents: httpDemoAgents },
+  [githubDemoWorkflow.id]: { workflow: githubDemoWorkflow, agents: githubDemoAgents },
+  github: { workflow: githubDemoWorkflow, agents: githubDemoAgents },
 };
 
 export function resolveWorkflow(id: string): RegisteredWorkflow {

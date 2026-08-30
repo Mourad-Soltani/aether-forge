@@ -5,6 +5,8 @@ import {
   decideRun,
   fetchRuns,
   fetchWorkflows,
+  getStoredApiToken,
+  setStoredApiToken,
   startRun,
   type RunSummary,
 } from "../lib/api";
@@ -19,6 +21,7 @@ export default function HomePage() {
   const [wf, setWf] = useState("wf.hitl");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [token, setToken] = useState("");
 
   async function refresh() {
     try {
@@ -31,11 +34,20 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    setToken(getStoredApiToken());
     void refresh();
     void fetchWorkflows()
       .then((d) => setWorkflows(d.workflows))
       .catch(() => undefined);
   }, []);
+
+  function saveToken() {
+    setStoredApiToken(token);
+    void refresh();
+    void fetchWorkflows()
+      .then((d) => setWorkflows(d.workflows))
+      .catch(() => undefined);
+  }
 
   async function onStart() {
     setBusy(true);
@@ -70,10 +82,18 @@ export default function HomePage() {
       </p>
       {error ? (
         <p className="err">
-          {error}. Start the API with <code>npm run start:api</code>.
+          {error}. Start the API with <code>npm run start:api</code>. If auth is
+          on, save the same token used as <code>AETHER_API_TOKEN</code>.
         </p>
       ) : null}
       <div className="row">
+        <input
+          type="password"
+          placeholder="API token (local only)"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+        />
+        <button onClick={saveToken}>Save token</button>
         <select value={wf} onChange={(e) => setWf(e.target.value)}>
           {(workflows.length
             ? workflows
@@ -81,6 +101,7 @@ export default function HomePage() {
                 { id: "wf.hello", name: "hello" },
                 { id: "wf.hitl", name: "hitl" },
                 { id: "wf.http", name: "http" },
+                { id: "wf.github", name: "github" },
               ]
           ).map((w) => (
             <option key={w.id} value={w.id}>

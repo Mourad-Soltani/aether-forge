@@ -1,6 +1,27 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_AETHER_API_URL ?? "http://127.0.0.1:8787";
 
+const TOKEN_STORAGE_KEY = "aether.apiToken";
+
+export function getStoredApiToken(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(TOKEN_STORAGE_KEY) ?? "";
+}
+
+export function setStoredApiToken(token: string): void {
+  if (typeof window === "undefined") return;
+  const trimmed = token.trim();
+  if (!trimmed) window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  else window.localStorage.setItem(TOKEN_STORAGE_KEY, trimmed);
+}
+
+function resolveToken(): string | undefined {
+  const fromEnv = process.env.NEXT_PUBLIC_AETHER_API_TOKEN?.trim();
+  if (fromEnv) return fromEnv;
+  const stored = getStoredApiToken().trim();
+  return stored || undefined;
+}
+
 export type RunStatus =
   | "pending"
   | "running"
@@ -43,9 +64,15 @@ export interface Run {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = resolveToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (token) headers["X-Aether-Token"] = token;
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers,
     cache: "no-store",
   });
   const data = await res.json().catch(() => ({}));
