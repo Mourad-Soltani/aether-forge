@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { appendAudit } from "./audit.js";
-import { saveRun } from "./persist.js";
+import { listRuns, loadRun, saveRun } from "./persist.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
-import { helloAgents, helloWorkflow } from "./workflows/hello.js";
+import { resolveWorkflow } from "./workflows/registry.js";
 
 function interpolate(value: unknown, run: Run): unknown {
   if (typeof value !== "string") {
@@ -31,28 +31,54 @@ function interpolate(value: unknown, run: Run): unknown {
 export async function executeWorkflow(
   workflow: Workflow,
   agents: Agent[],
+  existing?: Run,
 ): Promise<Run> {
   const agentMap = new Map(agents.map((a) => [a.id, a]));
-  const run: Run = {
+  const run: Run = existing ?? {
     id: randomUUID(),
     workflowId: workflow.id,
     status: "running",
     startedAt: new Date().toISOString(),
     memory: {},
     audit: [],
+    approvedStepIds: [],
   };
 
-  appendAudit(run, {
-    type: "run_start",
-    content: { workflowId: workflow.id, name: workflow.name },
-  });
+  run.status = "running";
+  delete run.error;
+  delete run.finishedAt;
+
+  if (!existing) {
+    appendAudit(run, {
+      type: "run_start",
+      content: { workflowId: workflow.id, name: workflow.name },
+    });
+  }
+
+  const startIndex = existing?.pausedStepId
+    ? Math.max(
+        0,
+        workflow.steps.findIndex((s) => s.id === existing.pausedStepId),
+      )
+    : 0;
 
   try {
-    for (const step of workflow.steps) {
-      await executeStep(run, workflow, step, agentMap);
+    for (let i = startIndex; i < workflow.steps.length; i++) {
+      const step = workflow.steps[i];
+      const outcome = await executeStep(run, workflow, step, agentMap);
+      if (outcome === "paused") {
+        const file = await saveRun(run);
+        console.log(`Run ${run.status}: ${run.id}`);
+        console.log(`Paused at step: ${run.pausedStepId}`);
+        console.log(`Resume: npm run start:orchestrator -- --approve ${run.id}`);
+        console.log(`Reject: npm run start:orchestrator -- --reject ${run.id}`);
+        console.log(`Persisted: ${file}`);
+        return run;
+      }
     }
     run.status = "completed";
     run.finishedAt = new Date().toISOString();
+    delete run.pausedStepId;
     appendAudit(run, {
       type: "run_end",
       content: { status: run.status },
@@ -77,7 +103,7 @@ async function executeStep(
   workflow: Workflow,
   step: Step,
   agentMap: Map<string, Agent>,
-): Promise<void> {
+): Promise<"ok" | "paused"> {
   const agent = agentMap.get(step.agentId);
   if (!agent) throw new Error(`Unknown agent: ${step.agentId}`);
 
@@ -94,8 +120,10 @@ async function executeStep(
     );
   }
 
-  if (tool.irreversible && !workflow.autoApprove) {
+  const alreadyApproved = run.approvedStepIds?.includes(step.id);
+  if (tool.irreversible && !workflow.autoApprove && !alreadyApproved) {
     run.status = "awaiting_approval";
+    run.pausedStepId = step.id;
     appendAudit(run, {
       type: "human_input",
       agentId: agent.id,
@@ -106,9 +134,7 @@ async function executeStep(
         args: parsed.data,
       },
     });
-    throw new Error(
-      `Paused for approval: ${tool.name} on step ${step.id}`,
-    );
+    return "paused";
   }
 
   appendAudit(run, {
@@ -142,13 +168,94 @@ async function executeStep(
   if (step.writeTo) {
     run.memory[step.writeTo] = result;
   }
+  return "ok";
+}
+
+export async function resumeRun(
+  runId: string,
+  decision: "approve" | "reject",
+): Promise<Run> {
+  const run = await loadRun(runId);
+  if (run.status !== "awaiting_approval") {
+    throw new Error(
+      `Run ${runId} is ${run.status}, expected awaiting_approval`,
+    );
+  }
+  const { workflow, agents } = resolveWorkflow(run.workflowId);
+
+  if (decision === "reject") {
+    run.status = "failed";
+    run.finishedAt = new Date().toISOString();
+    run.error = `Rejected at step ${run.pausedStepId}`;
+    appendAudit(run, {
+      type: "decision",
+      stepId: run.pausedStepId,
+      content: { decision: "reject", stepId: run.pausedStepId },
+    });
+    appendAudit(run, { type: "run_end", content: { status: run.status } });
+    const file = await saveRun(run);
+    console.log(`Run rejected: ${run.id}`);
+    console.log(`Persisted: ${file}`);
+    return run;
+  }
+
+  run.approvedStepIds = [
+    ...new Set([...(run.approvedStepIds ?? []), run.pausedStepId ?? ""]),
+  ].filter(Boolean);
+  appendAudit(run, {
+    type: "decision",
+    stepId: run.pausedStepId,
+    content: { decision: "approve", stepId: run.pausedStepId },
+  });
+  return executeWorkflow(workflow, agents, run);
+}
+
+function printUsage(): void {
+  console.log(`Aether Forge orchestrator
+
+Usage:
+  npm run start:orchestrator [-- --workflow <hello|hitl|http|wf.*>]
+  npm run start:orchestrator -- --list
+  npm run start:orchestrator -- --approve <runId>
+  npm run start:orchestrator -- --reject <runId>
+`);
 }
 
 async function main() {
-  console.log("Aether Forge orchestrator — running hello-workflow");
-  const run = await executeWorkflow(helloWorkflow, helloAgents);
-  console.log("Memory keys:", Object.keys(run.memory).join(", "));
-  if (run.error) {
+  const argv = process.argv.slice(2);
+  if (argv.includes("--help") || argv.includes("-h")) {
+    printUsage();
+    return;
+  }
+  if (argv.includes("--list")) {
+    const ids = await listRuns();
+    console.log(ids.length ? ids.join("\n") : "(no runs yet)");
+    return;
+  }
+  const approveIdx = argv.indexOf("--approve");
+  if (approveIdx >= 0) {
+    const id = argv[approveIdx + 1];
+    if (!id) throw new Error("--approve requires a run id");
+    const run = await resumeRun(id, "approve");
+    console.log("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
+    if (run.error) process.exitCode = 1;
+    return;
+  }
+  const rejectIdx = argv.indexOf("--reject");
+  if (rejectIdx >= 0) {
+    const id = argv[rejectIdx + 1];
+    if (!id) throw new Error("--reject requires a run id");
+    await resumeRun(id, "reject");
+    return;
+  }
+  const wfIdx = argv.indexOf("--workflow");
+  const workflowId = wfIdx >= 0 ? argv[wfIdx + 1] : "hello";
+  if (!workflowId) throw new Error("--workflow requires an id");
+  const { workflow, agents } = resolveWorkflow(workflowId);
+  console.log(`Aether Forge orchestrator — running ${workflow.id}`);
+  const run = await executeWorkflow(workflow, agents);
+  console.log("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
+  if (run.status === "failed") {
     console.error("Error:", run.error);
     process.exitCode = 1;
   }

@@ -86,4 +86,8 @@ export interface Run {
   memory: Record<string, unknown>;
   audit: AuditEvent[];
   error?: string;
+  /** Step that triggered HITL pause. */
+  pausedStepId?: string;
+  /** Steps already approved for this run. */
+  approvedStepIds?: string[];
 }

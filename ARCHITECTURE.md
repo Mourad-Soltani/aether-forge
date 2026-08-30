@@ -34,13 +34,17 @@ Tools receive a `ToolContext` with `runId`, `agentId`, `memory`, and `audit`.
 2. Create a `Run` with status `running` and empty memory + audit.
 3. For each step:
    - resolve the agent and tool
-   - if tool is irreversible and `autoApprove` is false → emit `human_input` and pause (`awaiting_approval`)
+   - if tool is irreversible and `autoApprove` is false and step is not in `approvedStepIds` → emit `human_input`, set `pausedStepId`, persist, return `awaiting_approval` (not failed)
    - validate args with Zod
    - execute tool
    - write `tool_call` + `tool_result` (or `error`) audit events
    - optionally write a named memory key from the result
 4. Mark run `completed` or `failed`.
 5. Persist run to `data/runs/<runId>.json`.
+
+Resume (`--approve` / `--reject`):
+- reject → `decision` audit + `failed`
+- approve → append step to `approvedStepIds`, continue from `pausedStepId`
 
 Parallel steps are specified in types (`mode: "parallel"`) but **not executed in parallel yet** — sequential fallback only.
 
@@ -49,14 +53,21 @@ Run-scoped `Record<string, unknown>`. Steps can `writeTo` a key. Later steps rea
 
 ## Persistence
 JSON files under `data/runs/` for MVP. Postgres later (`DATABASE_URL`).
+`loadRun` / `listRuns` / `saveRun` in `src/persist.ts`.
+
+## Built-in tools (Session 2)
+- Stubs: `research_stub`, `summarize_stub`, `create_ticket_stub` (irreversible), `notify_stub`
+- Real: `http_request` (http/https only, 10s default timeout)
+- Real (env-gated): `github_create_issue` (irreversible; `GITHUB_TOKEN` or `GH_TOKEN`)
 
 ## MVP Scope (first 4–6 weeks of daily sessions)
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
 2. Simple sequential execution engine — **done v0.1**; parallel next
-3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call)
-4. One vertical demo workflow — **hello-workflow with mocked tools done**
+3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues **done**
+4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done**
 5. Basic Next.js UI showing runs + audit trail
 6. Local persistence (JSON files) → later Postgres
+7. HITL resume — **CLI done Session 2; UI next**
 
 ## Non-goals for MVP
 - Full multi-tenancy
@@ -67,3 +78,5 @@ JSON files under `data/runs/` for MVP. Postgres later (`DATABASE_URL`).
 ## Decisions (additive)
 - Human-in-the-loop for `irreversible` tools by default; hello-workflow uses `autoApprove: true` so it is runnable headless.
 - Interpolation is limited to `{{memory.<key>}}` and `{{run.id}}` in step args.
+- HITL pause is a first-class run status, not an exception/`failed`.
+- No secrets in repo. Connectors read env at execute time.

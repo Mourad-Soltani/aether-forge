@@ -72,3 +72,12 @@ export const helloWorkflow: Workflow = {
     },
   ],
 };
+
+/** Same graph as hello, but HITL is enforced on the irreversible ticket step. */
+export const hitlWorkflow: Workflow = {
+  ...helloWorkflow,
+  id: "wf.hitl",
+  name: "Hello workforce (HITL)",
+  description: "Same as hello-workflow but pauses on create_ticket_stub",
+  autoApprove: false,
+};
