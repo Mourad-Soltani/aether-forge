@@ -4,10 +4,12 @@
   "private": true,
   "description": "Private multi-agent OS for enterprise knowledge work",
   "scripts": {
-    "dev": "echo \"TODO: wire monorepo scripts\"",
-    "build": "echo \"TODO\"",
+    "dev": "npm run dev:web",
+    "dev:web": "npm run dev --workspace=@aether-forge/web",
+    "build": "npm run build --workspace=@aether-forge/web",
     "test": "echo \"TODO\"",
-    "start:orchestrator": "tsx src/orchestrator.ts"
+    "start:orchestrator": "tsx src/orchestrator.ts",
+    "start:api": "tsx src/api.ts"
   },
   "workspaces": [
     "apps/*",

@@ -1,0 +1,37 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --panel: #141824;
+  --line: #2a3144;
+  --text: #e8ecf5;
+  --muted: #8b95ad;
+  --ok: #3dd68c;
+  --warn: #f0c14b;
+  --bad: #ff6b6b;
+  --accent: #7aa2ff;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 ui-sans-serif, system-ui, sans-serif; }
+a { color: var(--accent); text-decoration: none; }
+.top { display: flex; gap: 12px; align-items: baseline; padding: 16px 24px; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; color: var(--text); letter-spacing: 0.02em; }
+.muted { color: var(--muted); }
+main { padding: 24px; max-width: 1100px; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+.s-completed { background: #143326; color: var(--ok); }
+.s-failed { background: #3a1515; color: var(--bad); }
+.s-awaiting_approval { background: #3a3010; color: var(--warn); }
+.s-running, .s-pending { background: #1b2744; color: var(--accent); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+button, .btn {
+  background: #1e2a48; color: var(--text); border: 1px solid var(--line);
+  padding: 8px 12px; border-radius: 8px; cursor: pointer;
+}
+button.ok { background: #143326; border-color: #1f5a3c; }
+button.bad { background: #3a1515; border-color: #6a2222; }
+pre { background: var(--panel); padding: 12px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+.event { border: 1px solid var(--line); background: var(--panel); padding: 12px; margin-bottom: 8px; border-radius: 8px; }
+.err { color: var(--bad); }

@@ -7,6 +7,7 @@
 - **Memory**: Short-term (run-scoped key/value) + later long-term (vector + structured store).
 - **Audit Log**: Immutable append-only record of every thought, tool call, decision, and outcome. Non-negotiable for enterprise.
 - **Dashboard**: Visibility, approval queues, workflow designer, analytics.
+- **Control API**: Loopback HTTP surface over persist + resume so the UI never touches run files directly.
 
 ## Agent model (v0.1)
 An **Agent** is a named worker with:
@@ -42,7 +43,7 @@ Tools receive a `ToolContext` with `runId`, `agentId`, `memory`, and `audit`.
 4. Mark run `completed` or `failed`.
 5. Persist run to `data/runs/<runId>.json`.
 
-Resume (`--approve` / `--reject`):
+Resume (`--approve` / `--reject` or `POST /runs/:id/approve|reject`):
 - reject → `decision` audit + `failed`
 - approve → append step to `approvedStepIds`, continue from `pausedStepId`
 
@@ -53,7 +54,17 @@ Run-scoped `Record<string, unknown>`. Steps can `writeTo` a key. Later steps rea
 
 ## Persistence
 JSON files under `data/runs/` for MVP. Postgres later (`DATABASE_URL`).
-`loadRun` / `listRuns` / `saveRun` in `src/persist.ts`.
+`loadRun` / `listRuns` / `listRunSummaries` / `saveRun` in `src/persist.ts`.
+Run ids must match `[a-zA-Z0-9._-]` before any path join.
+
+## Control API (Session 3)
+`src/api.ts` — Node `http` server, no extra runtime dependency.
+Default bind: `127.0.0.1:8787`.
+Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`.
+CORS origin default `http://localhost:3000`.
+
+## Dashboard (Session 3)
+`apps/web` Next.js 14 app router. Client pages call the control API. Approve/reject and start-run from the UI.
 
 ## Built-in tools (Session 2)
 - Stubs: `research_stub`, `summarize_stub`, `create_ticket_stub` (irreversible), `notify_stub`
@@ -65,9 +76,9 @@ JSON files under `data/runs/` for MVP. Postgres later (`DATABASE_URL`).
 2. Simple sequential execution engine — **done v0.1**; parallel next
 3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues **done**
 4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done**
-5. Basic Next.js UI showing runs + audit trail
+5. Basic Next.js UI showing runs + audit trail — **skeleton done Session 3**
 6. Local persistence (JSON files) → later Postgres
-7. HITL resume — **CLI done Session 2; UI next**
+7. HITL resume — **CLI done Session 2; API + UI Session 3**
 
 ## Non-goals for MVP
 - Full multi-tenancy
@@ -80,3 +91,4 @@ JSON files under `data/runs/` for MVP. Postgres later (`DATABASE_URL`).
 - Interpolation is limited to `{{memory.<key>}}` and `{{run.id}}` in step args.
 - HITL pause is a first-class run status, not an exception/`failed`.
 - No secrets in repo. Connectors read env at execute time.
+- UI talks only to the loopback API. API is unauthenticated in Session 3 (loopback bind is the control).
