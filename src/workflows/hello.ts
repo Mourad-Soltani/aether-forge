@@ -56,7 +56,7 @@ export const helloWorkflow: Workflow = {
       toolName: "create_ticket_stub",
       args: {
         title: "Stand up auditable AI workforce control plane",
-        body: "{{memory.brief}}",
+        body: "Action brief: {{memory.brief}}",
       },
       writeTo: "ticket",
     },
