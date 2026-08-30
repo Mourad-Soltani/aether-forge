@@ -8,19 +8,46 @@ export const ToolCallSchema = z.object({
 export const AuditEventSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
+  runId: z.string().optional(),
   agentId: z.string().optional(),
-  type: z.enum(["thought", "tool_call", "tool_result", "decision", "error", "human_input"]),
+  stepId: z.string().optional(),
+  type: z.enum([
+    "thought",
+    "tool_call",
+    "tool_result",
+    "decision",
+    "error",
+    "human_input",
+    "run_start",
+    "run_end",
+  ]),
   content: z.any(),
 });
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
+export type RunStatus =
+  | "pending"
+  | "running"
+  | "awaiting_approval"
+  | "completed"
+  | "failed";
+
+export interface ToolContext {
+  runId: string;
+  agentId: string;
+  stepId: string;
+  memory: Record<string, unknown>;
+  audit: (type: AuditEvent["type"], content: unknown) => void;
+}
+
 export interface Tool {
   name: string;
   description: string;
-  parameters: z.ZodSchema;
-  execute: (args: any) => Promise<any>;
+  parameters: z.ZodTypeAny;
+  irreversible?: boolean;
+  execute: (args: Record<string, unknown>, ctx: ToolContext) => Promise<unknown>;
 }
 
 export interface Agent {
@@ -29,4 +56,34 @@ export interface Agent {
   goal: string;
   tools: Tool[];
   systemPrompt?: string;
+}
+
+export interface Step {
+  id: string;
+  agentId: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  /** Write tool result into run memory under this key. */
+  writeTo?: string;
+  mode?: "sequential" | "parallel";
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description?: string;
+  steps: Step[];
+  /** If true, skip HITL pause for irreversible tools (demos / CI). */
+  autoApprove?: boolean;
+}
+
+export interface Run {
+  id: string;
+  workflowId: string;
+  status: RunStatus;
+  startedAt: string;
+  finishedAt?: string;
+  memory: Record<string, unknown>;
+  audit: AuditEvent[];
+  error?: string;
 }
