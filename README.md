@@ -53,7 +53,7 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/tools/http.ts` – real HTTP connector
 - `src/tools/github.ts` – GitHub Issues connector (env token)
 - `src/tools/slack.ts` – Slack incoming webhook
-- `apps/web` – Next.js dashboard (runs, audit, approve/reject)
+- `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
 - `packages/` – shared packages
 - `PROGRESS.md` – living handoff log (read this first every session)
 - `ARCHITECTURE.md` – evolving design

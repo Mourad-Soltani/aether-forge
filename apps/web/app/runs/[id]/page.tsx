@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { decideRun, fetchRun, type Run } from "../../../lib/api";
+import { useIntervalRefresh } from "../../../lib/useIntervalRefresh";
 
 export default function RunPage({ params }: { params: { id: string } }) {
   const [run, setRun] = useState<Run | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState(true);
 
   async function load() {
     try {
@@ -21,6 +23,8 @@ export default function RunPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     void load();
   }, [params.id]);
+
+  useIntervalRefresh(load, live && !!run && run.status !== "completed" && run.status !== "failed", 5000);
 
   async function onDecide(decision: "approve" | "reject") {
     setBusy(true);
@@ -45,7 +49,15 @@ export default function RunPage({ params }: { params: { id: string } }) {
       <h1>Run {run.id.slice(0, 8)}…</h1>
       <p>
         <span className={`badge s-${run.status}`}>{run.status}</span>{" "}
-        <span className="muted">{run.workflowId}</span>
+        <span className="muted">{run.workflowId}</span>{" "}
+        <label className="muted">
+          <input
+            type="checkbox"
+            checked={live}
+            onChange={(e) => setLive(e.target.checked)}
+          />{" "}
+          live 5s
+        </label>
       </p>
       {run.pausedStepId ? (
         <p className="muted">Paused at step {run.pausedStepId}</p>

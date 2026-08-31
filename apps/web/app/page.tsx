@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   decideRun,
   fetchRuns,
@@ -8,8 +8,19 @@ import {
   getStoredApiToken,
   setStoredApiToken,
   startRun,
+  type RunStatus,
   type RunSummary,
 } from "../lib/api";
+import { useIntervalRefresh } from "../lib/useIntervalRefresh";
+
+const STATUSES: Array<RunStatus | "all"> = [
+  "all",
+  "awaiting_approval",
+  "running",
+  "pending",
+  "completed",
+  "failed",
+];
 
 function badge(status: string) {
   return <span className={`badge s-${status}`}>{status}</span>;
@@ -22,16 +33,23 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [token, setToken] = useState("");
+  const [statusFilter, setStatusFilter] = useState<RunStatus | "all">("all");
+  const [workflowFilter, setWorkflowFilter] = useState("all");
+  const [live, setLive] = useState(true);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
   async function refresh() {
     try {
       const data = await fetchRuns();
       setRuns(data.runs);
       setError(null);
+      setUpdatedAt(new Date().toISOString());
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
   }
+
+  useIntervalRefresh(refresh, live, 5000);
 
   useEffect(() => {
     setToken(getStoredApiToken());
@@ -73,12 +91,28 @@ export default function HomePage() {
     }
   }
 
+  const visible = useMemo(() => {
+    return runs.filter((r) => {
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (workflowFilter !== "all" && r.workflowId !== workflowFilter) return false;
+      return true;
+    });
+  }, [runs, statusFilter, workflowFilter]);
+
+  const workflowIds = useMemo(() => {
+    const ids = new Set(runs.map((r) => r.workflowId));
+    for (const w of workflows) ids.add(w.id);
+    return Array.from(ids).sort();
+  }, [runs, workflows]);
+
+  const pendingCount = runs.filter((r) => r.status === "awaiting_approval").length;
+
   return (
     <>
       <h1>Runs</h1>
       <p className="muted">
         Dashboard reads persisted runs through the local API only — never from
-        the browser filesystem.
+        the browser filesystem. Auth header is attached on every call.
       </p>
       {error ? (
         <p className="err">
@@ -115,6 +149,52 @@ export default function HomePage() {
         <button onClick={() => void refresh()} disabled={busy}>
           Refresh
         </button>
+        <label className="muted">
+          <input
+            type="checkbox"
+            checked={live}
+            onChange={(e) => setLive(e.target.checked)}
+          />{" "}
+          live 5s
+        </label>
+        {updatedAt ? (
+          <span className="muted">updated {updatedAt.slice(11, 19)}Z</span>
+        ) : null}
+        {pendingCount > 0 ? (
+          <span className="badge s-awaiting_approval">{pendingCount} awaiting</span>
+        ) : null}
+      </div>
+      <div className="row">
+        <label className="muted">
+          status{" "}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as RunStatus | "all")}
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="muted">
+          workflow{" "}
+          <select
+            value={workflowFilter}
+            onChange={(e) => setWorkflowFilter(e.target.value)}
+          >
+            <option value="all">all</option>
+            {workflowIds.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="muted">
+          showing {visible.length} / {runs.length}
+        </span>
       </div>
       <table>
         <thead>
@@ -127,14 +207,14 @@ export default function HomePage() {
           </tr>
         </thead>
         <tbody>
-          {runs.length === 0 ? (
+          {visible.length === 0 ? (
             <tr>
               <td colSpan={5} className="muted">
-                No runs yet.
+                No runs match the current filters.
               </td>
             </tr>
           ) : (
-            runs.map((r) => (
+            visible.map((r) => (
               <tr key={r.id}>
                 <td>{r.startedAt.replace("T", " ").slice(0, 19)}</td>
                 <td>{r.workflowId}</td>

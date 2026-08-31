@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 4 — 2026-08-31)
+## Current Status (Session 5 — 2026-08-31)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -21,13 +21,17 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Dashboard token field (localStorage) + `NEXT_PUBLIC_AETHER_API_TOKEN`
 - [x] Slack incoming-webhook tool (`slack_notify`)
 - [x] Gated GitHub Issues demo workflow `wf.github` / `github` (HITL; env token at execute time)
+- [x] Dashboard filters (status + workflow) + 5s live refresh toggle on list and run detail
+- [x] Awaiting-approval count badge; live poll stops on terminal run statuses (detail page)
 - [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied token outside git)
-- [ ] Dashboard polish (filters, live refresh)
+- [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
+- [ ] Packaging / demo script (`demo.sh`) that walks hello → http → hitl without secrets
 
 ## Next Up (highest priority)
 1. Execute `wf.github` once with a human-supplied least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit.
 2. Optional Slack demo path when `SLACK_WEBHOOK_URL` is present (do not commit the URL).
-3. Dashboard filters + interval refresh; keep auth header on every client call.
+3. Packaging / demo script (`demo.sh`) that walks hello → http → hitl without secrets.
+4. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -48,9 +52,11 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Dashboard may store the API token in `localStorage` (`aether.apiToken`) for local use only.
 - `wf.github` target repo defaults to `Mourad-Soltani/aether-forge` via `AETHER_DEMO_GITHUB_OWNER` / `AETHER_DEMO_GITHUB_REPO`.
 - Slack webhook tool only accepts http(s). No secrets in repo.
+- Session 5: dashboard filters are client-side over `/runs` summaries. Live refresh defaults on; operator can disable. Detail-page poll stops when run is `completed` or `failed`.
+- Tokens that appear in chat must be treated as compromised and rotated. Daily builder must not create issues with a chat-pasted PAT.
 
 ## Handoff for next session
-Session 4 lands the local auth gate + Slack tool + GitHub HITL workflow definition.
+Session 5 lands dashboard filters + interval refresh. Live GitHub issue create is still blocked on a **rotated, least-privilege** token that never enters chat or git.
 
 ```bash
 npm install
@@ -74,7 +80,5 @@ API:
 - `POST /runs/:id/reject`
 
 Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`.
-
-Next: live GitHub issue execution with a rotated, least-privilege token that is never pasted into chat or commits.
 
 **Security note:** Do not paste PATs into chat or commits. Rotate any token that appeared in a previous session prompt. Prefer GitHub connector with least privilege (`issues:write` on one repo).
