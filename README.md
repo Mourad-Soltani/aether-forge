@@ -8,6 +8,7 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 
 ```bash
 npm install
+npm run demo                 # hello → http → hitl (no secrets)
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
@@ -54,6 +55,7 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/tools/github.ts` – GitHub Issues connector (env token)
 - `src/tools/slack.ts` – Slack incoming webhook
 - `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
+- `demo.sh` – secret-free walkthrough of hello → http → hitl
 - `packages/` – shared packages
 - `PROGRESS.md` – living handoff log (read this first every session)
 - `ARCHITECTURE.md` – evolving design

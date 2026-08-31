@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 5 — 2026-08-31)
+## Current Status (Session 6 — 2026-09-01)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -23,15 +23,16 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Gated GitHub Issues demo workflow `wf.github` / `github` (HITL; env token at execute time)
 - [x] Dashboard filters (status + workflow) + 5s live refresh toggle on list and run detail
 - [x] Awaiting-approval count badge; live poll stops on terminal run statuses (detail page)
-- [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied token outside git)
+- [x] Packaging / demo script (`demo.sh` + `npm run demo`) walks hello → http → hitl without secrets
+- [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
-- [ ] Packaging / demo script (`demo.sh`) that walks hello → http → hitl without secrets
+- [ ] Landing-page copy + buyer shortlist (after one recorded live GitHub proof)
 
 ## Next Up (highest priority)
 1. Execute `wf.github` once with a human-supplied least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit.
 2. Optional Slack demo path when `SLACK_WEBHOOK_URL` is present (do not commit the URL).
-3. Packaging / demo script (`demo.sh`) that walks hello → http → hitl without secrets.
-4. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
+3. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
+4. Optional: add a `--json` flag on the orchestrator so `demo.sh` does not scrape console text.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -54,19 +55,22 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Slack webhook tool only accepts http(s). No secrets in repo.
 - Session 5: dashboard filters are client-side over `/runs` summaries. Live refresh defaults on; operator can disable. Detail-page poll stops when run is `completed` or `failed`.
 - Tokens that appear in chat must be treated as compromised and rotated. Daily builder must not create issues with a chat-pasted PAT.
+- Session 6: `demo.sh` is the canonical secret-free proof path. It scrapes orchestrator console lines (`Run <status>: <id>`). GitHub/Slack live paths stay operator-local.
 
 ## Handoff for next session
-Session 5 lands dashboard filters + interval refresh. Live GitHub issue create is still blocked on a **rotated, least-privilege** token that never enters chat or git.
+Session 6 ships `demo.sh` / `npm run demo`. Live GitHub issue create is still blocked on a **rotated, least-privilege** token that never enters chat or git. A PAT pasted into a chat prompt is compromised — rotate it; do not use it from the daily builder.
 
 ```bash
 npm install
+npm run demo
 export AETHER_API_TOKEN=dev-local-token   # optional but recommended
 npm run start:api
 # other terminal:
 npm run dev:web
 # open http://localhost:3000 — paste the same token, Save token
-npm run start:orchestrator -- --workflow github
-# approve after pause (requires GITHUB_TOKEN in that process env):
+# operator-only, never in chat:
+# export GITHUB_TOKEN=...   # issues:write on Mourad-Soltani/aether-forge only
+# npm run start:orchestrator -- --workflow github
 # npm run start:orchestrator -- --approve <runId>
 ```
 

@@ -8,6 +8,7 @@
     "dev:web": "npm run dev --workspace=@aether-forge/web",
     "build": "npm run build --workspace=@aether-forge/web",
     "test": "echo \"TODO\"",
+    "demo": "bash demo.sh",
     "start:orchestrator": "tsx src/orchestrator.ts",
     "start:api": "tsx src/api.ts"
   },

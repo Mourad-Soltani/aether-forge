@@ -69,6 +69,11 @@ Auth (Session 4): optional `AETHER_API_TOKEN`. When set, require `X-Aether-Token
 Token: `NEXT_PUBLIC_AETHER_API_TOKEN` or localStorage `aether.apiToken` (local operator convenience).
 Session 5: list page filters by status and workflow id (client-side). Optional 5s poll (`useIntervalRefresh`) on list + detail. Detail poll stops on terminal statuses.
 
+## Demo packaging (Session 6)
+`demo.sh` / `npm run demo` runs `wf.hello`, `wf.http`, then `wf.hitl` + `--approve`.
+No secrets. Parses `Run <status>: <id>` from orchestrator stdout.
+`wf.github` and Slack remain operator-env only.
+
 ## Built-in tools
 - Stubs: `research_stub`, `summarize_stub`, `create_ticket_stub` (irreversible), `notify_stub`
 - Real: `http_request` (http/https only, 10s default timeout)
@@ -79,7 +84,7 @@ Session 5: list page filters by status and workflow id (client-side). Optional 5
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
 2. Simple sequential execution engine — **done v0.1**; parallel next
 3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues + Slack webhook **done**
-4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending token)**
+4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending token); demo.sh packaging done Session 6**
 5. Basic Next.js UI showing runs + audit trail — **skeleton Session 3; token field Session 4; filters + live refresh Session 5**
 6. Local persistence (JSON files) → later Postgres
 7. HITL resume — **CLI done Session 2; API + UI Session 3**
@@ -100,3 +105,4 @@ Session 5: list page filters by status and workflow id (client-side). Optional 5
 - Session 4: API may be token-gated; loopback bind is still the network control.
 - `wf.github` is HITL and uses env-configured owner/repo; it does not embed tokens.
 - Session 5: dashboard filtering is client-side; polling is opt-out, 5s, and must keep the auth header on every request.
+- Session 6: secret-free demo path is `npm run demo`. Chat-pasted PATs are compromised and must not be used by the daily builder.
