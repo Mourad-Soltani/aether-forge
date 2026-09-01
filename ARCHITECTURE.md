@@ -74,6 +74,11 @@ Session 5: list page filters by status and workflow id (client-side). Optional 5
 No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; human logs go to stderr. `demo.sh` parses that object instead of scraping `Run <status>: <id>`.
 `wf.github` and Slack remain operator-env only.
 
+## RunSummary contract (Session 7–8)
+`src/summary.ts` owns `RunSummarySchema` (Zod), `summarizeRun`, and `parseRunSummaryFromStdout`.
+`--json` stdout is one schema-valid object. Pause (`awaiting_approval`) is `ok: true`. Failed runs are `ok: false`.
+`npm test` runs `tsx --test tests/*.test.ts` (no extra test framework).
+
 ## Built-in tools
 - Stubs: `research_stub`, `summarize_stub`, `create_ticket_stub` (irreversible), `notify_stub`
 - Real: `http_request` (http/https only, 10s default timeout)
@@ -84,7 +89,7 @@ No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; h
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
 2. Simple sequential execution engine — **done v0.1**; parallel next
 3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues + Slack webhook **done**
-4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending token); demo.sh packaging done Session 6; --json Session 7**
+4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending token); demo.sh packaging done Session 6; --json Session 7; unit tests Session 8**
 5. Basic Next.js UI showing runs + audit trail — **skeleton Session 3; token field Session 4; filters + live refresh Session 5**
 6. Local persistence (JSON files) → later Postgres
 7. HITL resume — **CLI done Session 2; API + UI Session 3**
@@ -107,3 +112,4 @@ No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; h
 - Session 5: dashboard filtering is client-side; polling is opt-out, 5s, and must keep the auth header on every request.
 - Session 6: secret-free demo path is `npm run demo`. Chat-pasted PATs are compromised and must not be used by the daily builder.
 - Session 7: `--json` is the machine contract for scripts. Human-readable CLI remains the default.
+- Session 8: `RunSummary` schema lives in `src/summary.ts`. Tests use Node built-in `node:test` via `tsx --test`.

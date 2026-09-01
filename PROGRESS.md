@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 7 — 2026-09-01)
+## Current Status (Session 8 — 2026-09-02)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -25,6 +25,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Awaiting-approval count badge; live poll stops on terminal run statuses (detail page)
 - [x] Packaging / demo script (`demo.sh` + `npm run demo`) walks hello → http → hitl without secrets
 - [x] Orchestrator `--json` flag (Session 7) — one `RunSummary` on stdout; human logs on stderr; `demo.sh` parses JSON instead of scraping console text
+- [x] Session 8 — `src/summary.ts` Zod `RunSummary` contract + `parseRunSummaryFromStdout`; `npm test` via `tsx --test tests/*.test.ts`
 - [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + buyer shortlist (after one recorded live GitHub proof)
@@ -33,7 +34,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 1. Execute `wf.github` once with a human-supplied least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit.
 2. Optional Slack demo path when `SLACK_WEBHOOK_URL` is present (do not commit the URL).
 3. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
-4. Optional: thin unit tests around `summarizeRun` / `--json` parse contract.
+4. Optional next engine slice: sequential-fallback note remains; parallel step execution still deferred.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -58,12 +59,14 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Tokens that appear in chat must be treated as compromised and rotated. Daily builder must not create issues with a chat-pasted PAT.
 - Session 6: `demo.sh` is the canonical secret-free proof path.
 - Session 7: `--json` is the machine contract. `demo.sh` invokes `npx tsx src/orchestrator.ts --json` so npm script banners do not pollute stdout.
+- Session 8: tests use Node built-in `node:test`. `RunSummary` schema is the source of truth for demo parse.
 
 ## Handoff for next session
-Session 7 ships `--json` + demo parse. Live GitHub issue create is still blocked on a **rotated, least-privilege** token that never enters chat or git. A PAT pasted into a chat prompt is compromised — rotate it; do not use it from the daily builder.
+Session 8 ships unit tests + a typed `RunSummary` parse helper. Live GitHub issue create is still blocked on a **rotated, least-privilege** token that never enters chat or git. A PAT pasted into a chat prompt is compromised — rotate it; do not use it from the daily builder.
 
 ```bash
 npm install
+npm test
 npm run demo
 export AETHER_API_TOKEN=dev-local-token   # optional but recommended
 npm run start:api

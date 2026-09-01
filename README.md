@@ -8,6 +8,7 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 
 ```bash
 npm install
+npm test                     # node:test — RunSummary + persist id contract
 npm run demo                 # hello → http → hitl (no secrets)
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
@@ -17,7 +18,7 @@ npm run start:orchestrator -- --list
 npm run start:orchestrator -- --json --workflow hello
 ```
 
-`--json` prints one `RunSummary` object to stdout (human logs on stderr). `demo.sh` uses that path so it does not scrape console prose.
+`--json` prints one `RunSummary` object to stdout (human logs on stderr). Schema lives in `src/summary.ts`. `demo.sh` uses that path so it does not scrape console prose.
 
 Approve or reject a paused run:
 
@@ -52,6 +53,7 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 ## Project structure
 
 - `src/` – core orchestrator, types, agents, tools
+- `src/summary.ts` – `RunSummary` Zod contract + stdout parse helper
 - `src/api.ts` – loopback control API (runs + HITL + optional token)
 - `src/auth.ts` – API token check
 - `src/tools/http.ts` – real HTTP connector
@@ -59,6 +61,7 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/tools/slack.ts` – Slack incoming webhook
 - `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
 - `demo.sh` – secret-free walkthrough of hello → http → hitl (JSON mode)
+- `tests/` – node:test unit tests
 - `packages/` – shared packages
 - `PROGRESS.md` – living handoff log (read this first every session)
 - `ARCHITECTURE.md` – evolving design

@@ -1,40 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { appendAudit } from "./audit.js";
 import { listRuns, loadRun, saveRun } from "./persist.js";
+import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
-export type RunSummary = {
-  ok: boolean;
-  status: Run["status"];
-  id: string;
-  workflowId: string;
-  pausedStepId: string | null;
-  auditEvents: number;
-  memoryKeys: string[];
-  error: string | null;
-  persisted?: string;
-};
+export type { RunSummary };
+export { summarizeRun };
 
 let jsonMode = false;
 
 function humanLog(...args: unknown[]): void {
   if (jsonMode) console.error(...args);
   else console.log(...args);
-}
-
-export function summarizeRun(run: Run, persisted?: string): RunSummary {
-  return {
-    ok: run.status !== "failed",
-    status: run.status,
-    id: run.id,
-    workflowId: run.workflowId,
-    pausedStepId: run.pausedStepId ?? null,
-    auditEvents: run.audit.length,
-    memoryKeys: Object.keys(run.memory),
-    error: run.error ?? null,
-    ...(persisted ? { persisted } : {}),
-  };
 }
 
 function emitSummary(run: Run, persisted?: string): void {
