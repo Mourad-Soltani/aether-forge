@@ -71,7 +71,7 @@ Session 5: list page filters by status and workflow id (client-side). Optional 5
 
 ## Demo packaging (Session 6)
 `demo.sh` / `npm run demo` runs `wf.hello`, `wf.http`, then `wf.hitl` + `--approve`.
-No secrets. Parses `Run <status>: <id>` from orchestrator stdout.
+No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; human logs go to stderr. `demo.sh` parses that object instead of scraping `Run <status>: <id>`.
 `wf.github` and Slack remain operator-env only.
 
 ## Built-in tools
@@ -84,7 +84,7 @@ No secrets. Parses `Run <status>: <id>` from orchestrator stdout.
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
 2. Simple sequential execution engine — **done v0.1**; parallel next
 3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues + Slack webhook **done**
-4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending token); demo.sh packaging done Session 6**
+4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending token); demo.sh packaging done Session 6; --json Session 7**
 5. Basic Next.js UI showing runs + audit trail — **skeleton Session 3; token field Session 4; filters + live refresh Session 5**
 6. Local persistence (JSON files) → later Postgres
 7. HITL resume — **CLI done Session 2; API + UI Session 3**
@@ -106,3 +106,4 @@ No secrets. Parses `Run <status>: <id>` from orchestrator stdout.
 - `wf.github` is HITL and uses env-configured owner/repo; it does not embed tokens.
 - Session 5: dashboard filtering is client-side; polling is opt-out, 5s, and must keep the auth header on every request.
 - Session 6: secret-free demo path is `npm run demo`. Chat-pasted PATs are compromised and must not be used by the daily builder.
+- Session 7: `--json` is the machine contract for scripts. Human-readable CLI remains the default.

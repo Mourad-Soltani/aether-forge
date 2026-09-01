@@ -14,7 +14,10 @@ npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
 npm run start:orchestrator -- --workflow github
 npm run start:orchestrator -- --list
+npm run start:orchestrator -- --json --workflow hello
 ```
+
+`--json` prints one `RunSummary` object to stdout (human logs on stderr). `demo.sh` uses that path so it does not scrape console prose.
 
 Approve or reject a paused run:
 
@@ -55,7 +58,7 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/tools/github.ts` – GitHub Issues connector (env token)
 - `src/tools/slack.ts` – Slack incoming webhook
 - `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
-- `demo.sh` – secret-free walkthrough of hello → http → hitl
+- `demo.sh` – secret-free walkthrough of hello → http → hitl (JSON mode)
 - `packages/` – shared packages
 - `PROGRESS.md` – living handoff log (read this first every session)
 - `ARCHITECTURE.md` – evolving design

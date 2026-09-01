@@ -4,6 +4,47 @@ import { listRuns, loadRun, saveRun } from "./persist.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
+export type RunSummary = {
+  ok: boolean;
+  status: Run["status"];
+  id: string;
+  workflowId: string;
+  pausedStepId: string | null;
+  auditEvents: number;
+  memoryKeys: string[];
+  error: string | null;
+  persisted?: string;
+};
+
+let jsonMode = false;
+
+function humanLog(...args: unknown[]): void {
+  if (jsonMode) console.error(...args);
+  else console.log(...args);
+}
+
+export function summarizeRun(run: Run, persisted?: string): RunSummary {
+  return {
+    ok: run.status !== "failed",
+    status: run.status,
+    id: run.id,
+    workflowId: run.workflowId,
+    pausedStepId: run.pausedStepId ?? null,
+    auditEvents: run.audit.length,
+    memoryKeys: Object.keys(run.memory),
+    error: run.error ?? null,
+    ...(persisted ? { persisted } : {}),
+  };
+}
+
+function emitSummary(run: Run, persisted?: string): void {
+  if (jsonMode) {
+    console.log(JSON.stringify(summarizeRun(run, persisted)));
+    return;
+  }
+  humanLog(`Run ${run.status}: ${run.id}`);
+}
+
 function interpolate(value: unknown, run: Run): unknown {
   if (typeof value !== "string") {
     if (Array.isArray(value)) return value.map((v) => interpolate(v, run));
@@ -68,11 +109,11 @@ export async function executeWorkflow(
       const outcome = await executeStep(run, workflow, step, agentMap);
       if (outcome === "paused") {
         const file = await saveRun(run);
-        console.log(`Run ${run.status}: ${run.id}`);
-        console.log(`Paused at step: ${run.pausedStepId}`);
-        console.log(`Resume: npm run start:orchestrator -- --approve ${run.id}`);
-        console.log(`Reject: npm run start:orchestrator -- --reject ${run.id}`);
-        console.log(`Persisted: ${file}`);
+        emitSummary(run, file);
+        humanLog(`Paused at step: ${run.pausedStepId}`);
+        humanLog(`Resume: npm run start:orchestrator -- --approve ${run.id}`);
+        humanLog(`Reject: npm run start:orchestrator -- --reject ${run.id}`);
+        humanLog(`Persisted: ${file}`);
         return run;
       }
     }
@@ -92,9 +133,9 @@ export async function executeWorkflow(
   }
 
   const file = await saveRun(run);
-  console.log(`Run ${run.status}: ${run.id}`);
-  console.log(`Audit events: ${run.audit.length}`);
-  console.log(`Persisted: ${file}`);
+  emitSummary(run, file);
+  humanLog(`Audit events: ${run.audit.length}`);
+  humanLog(`Persisted: ${file}`);
   return run;
 }
 
@@ -194,8 +235,9 @@ export async function resumeRun(
     });
     appendAudit(run, { type: "run_end", content: { status: run.status } });
     const file = await saveRun(run);
-    console.log(`Run rejected: ${run.id}`);
-    console.log(`Persisted: ${file}`);
+    emitSummary(run, file);
+    humanLog(`Run rejected: ${run.id}`);
+    humanLog(`Persisted: ${file}`);
     return run;
   }
 
@@ -218,17 +260,25 @@ Usage:
   npm run start:orchestrator -- --list
   npm run start:orchestrator -- --approve <runId>
   npm run start:orchestrator -- --reject <runId>
+  npm run start:orchestrator -- --json --workflow hello
+
+--json prints one RunSummary object to stdout; human logs go to stderr.
 `);
 }
 
 async function main() {
   const argv = process.argv.slice(2);
+  jsonMode = argv.includes("--json");
   if (argv.includes("--help") || argv.includes("-h")) {
     printUsage();
     return;
   }
   if (argv.includes("--list")) {
     const ids = await listRuns();
+    if (jsonMode) {
+      console.log(JSON.stringify({ ok: true, runs: ids }));
+      return;
+    }
     console.log(ids.length ? ids.join("\n") : "(no runs yet)");
     return;
   }
@@ -237,7 +287,7 @@ async function main() {
     const id = argv[approveIdx + 1];
     if (!id) throw new Error("--approve requires a run id");
     const run = await resumeRun(id, "approve");
-    console.log("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
+    humanLog("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
     if (run.error) process.exitCode = 1;
     return;
   }
@@ -252,9 +302,9 @@ async function main() {
   const workflowId = wfIdx >= 0 ? argv[wfIdx + 1] : "hello";
   if (!workflowId) throw new Error("--workflow requires an id");
   const { workflow, agents } = resolveWorkflow(workflowId);
-  console.log(`Aether Forge orchestrator — running ${workflow.id}`);
+  humanLog(`Aether Forge orchestrator — running ${workflow.id}`);
   const run = await executeWorkflow(workflow, agents);
-  console.log("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
+  humanLog("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
   if (run.status === "failed") {
     console.error("Error:", run.error);
     process.exitCode = 1;
@@ -268,7 +318,18 @@ const isDirect =
 
 if (isDirect) {
   main().catch((err) => {
-    console.error(err);
+    if (jsonMode) {
+      console.log(
+        JSON.stringify({
+          ok: false,
+          status: "failed",
+          id: null,
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    } else {
+      console.error(err);
+    }
     process.exit(1);
   });
 }
