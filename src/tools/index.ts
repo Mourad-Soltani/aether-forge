@@ -3,10 +3,12 @@ import type { Tool } from "../types.js";
 import { httpRequest } from "./http.js";
 import { githubCreateIssue } from "./github.js";
 import { slackNotify } from "./slack.js";
+import { workspaceRead, workspaceWrite } from "./workspace.js";
 
 export { httpRequest } from "./http.js";
 export { githubCreateIssue } from "./github.js";
 export { slackNotify } from "./slack.js";
+export { workspaceRead, workspaceWrite } from "./workspace.js";
 
 /** Echo / research stub — stands in for a search or knowledge-base tool. */
 export const researchStub: Tool = {
@@ -93,6 +95,8 @@ export const builtinTools: Tool[] = [
   httpRequest,
   githubCreateIssue,
   slackNotify,
+  workspaceRead,
+  workspaceWrite,
 ];
 
 export function toolsByName(tools: Tool[]): Map<string, Tool> {

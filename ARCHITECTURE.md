@@ -70,7 +70,7 @@ Token: `NEXT_PUBLIC_AETHER_API_TOKEN` or localStorage `aether.apiToken` (local o
 Session 5: list page filters by status and workflow id (client-side). Optional 5s poll (`useIntervalRefresh`) on list + detail. Detail poll stops on terminal statuses.
 
 ## Demo packaging (Session 6)
-`demo.sh` / `npm run demo` runs `wf.hello`, `wf.http`, `wf.hitl` + `--approve`, then `wf.github` with `AETHER_GITHUB_DRY_RUN=1`, then `wf.slack` with `AETHER_SLACK_DRY_RUN=1`.
+`demo.sh` / `npm run demo` runs `wf.hello`, `wf.http`, `wf.hitl` + `--approve`, then `wf.github` with `AETHER_GITHUB_DRY_RUN=1`, then `wf.slack` with `AETHER_SLACK_DRY_RUN=1`, then `wf.files` with `AETHER_WORKSPACE_DRY_RUN=1`.
 No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; human logs go to stderr. `demo.sh` parses that object instead of scraping `Run <status>: <id>`.
 Live `wf.github` and Slack remain operator-env only.
 
@@ -84,12 +84,13 @@ Live `wf.github` and Slack remain operator-env only.
 - Real: `http_request` (http/https only, 10s default timeout)
 - Real (env-gated): `github_create_issue` (irreversible; `GITHUB_TOKEN` or `GH_TOKEN`; `AETHER_GITHUB_DRY_RUN=1` simulates without API)
 - Real (env-gated): `slack_notify` (irreversible; `SLACK_WEBHOOK_URL` or `args.webhookUrl`; `AETHER_SLACK_DRY_RUN=1` simulates without HTTP)
+- Real (sandboxed): `workspace_read`, `workspace_write` (irreversible write; root `data/workspace` or `AETHER_WORKSPACE_ROOT`; `AETHER_WORKSPACE_DRY_RUN=1` skips disk I/O)
 
 ## MVP Scope (first 4–6 weeks of daily sessions)
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
 2. Simple sequential execution engine — **done v0.1**; parallel next
-3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues + Slack webhook **done**
-4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending rotated token); wf.slack defined (live exec pending webhook); demo.sh packaging done Session 6; --json Session 7; unit tests Session 8; slack dry-run Session 10**
+3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues + Slack webhook + sandboxed files **done**; LLM call still later
+4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending rotated token); wf.slack defined (live exec pending webhook); wf.files defined Session 11; demo.sh packaging done Session 6; --json Session 7; unit tests Session 8; slack dry-run Session 10; files dry-run Session 11**
 5. Basic Next.js UI showing runs + audit trail — **skeleton Session 3; token field Session 4; filters + live refresh Session 5**
 6. Local persistence (JSON files) → later Postgres
 7. HITL resume — **CLI done Session 2; API + UI Session 3**
@@ -126,4 +127,12 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 ## Decisions (Session 10)
 - Outbound Slack posts are irreversible. `wf.slack` is HITL (`autoApprove: false`).
 - `AETHER_SLACK_DRY_RUN=1|true|yes` skips the webhook HTTP call. HITL still applies.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Decisions (Session 11)
+- File I/O is confined to `AETHER_WORKSPACE_ROOT` or `./data/workspace`.
+- Relative paths only: segments matching `[a-zA-Z0-9._-]`.
+- `workspace_write` is irreversible. `wf.files` is HITL.
+- `AETHER_WORKSPACE_DRY_RUN=1|true|yes` skips disk I/O. HITL still applies.
+- Max text payload 64 KiB.
 - Chat-pasted PATs remain unusable for live `wf.github`.
