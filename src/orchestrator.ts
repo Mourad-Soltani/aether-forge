@@ -47,6 +47,20 @@ function interpolate(value: unknown, run: Run): unknown {
   );
 }
 
+/** Consecutive `mode: "parallel"` steps form one wave. Everything else is a solo wave. */
+export function groupWaves(steps: Step[]): Step[][] {
+  const waves: Step[][] = [];
+  for (const step of steps) {
+    const last = waves[waves.length - 1];
+    if (step.mode === "parallel" && last && last.every((s) => s.mode === "parallel")) {
+      last.push(step);
+    } else {
+      waves.push([step]);
+    }
+  }
+  return waves;
+}
+
 export async function executeWorkflow(
   workflow: Workflow,
   agents: Agent[],
@@ -74,17 +88,16 @@ export async function executeWorkflow(
     });
   }
 
-  const startIndex = existing?.pausedStepId
-    ? Math.max(
-        0,
-        workflow.steps.findIndex((s) => s.id === existing.pausedStepId),
-      )
-    : 0;
+  const waves = groupWaves(workflow.steps);
+  let startWave = 0;
+  if (existing?.pausedStepId) {
+    const idx = waves.findIndex((w) => w.some((s) => s.id === existing.pausedStepId));
+    startWave = Math.max(0, idx);
+  }
 
   try {
-    for (let i = startIndex; i < workflow.steps.length; i++) {
-      const step = workflow.steps[i];
-      const outcome = await executeStep(run, workflow, step, agentMap);
+    for (let w = startWave; w < waves.length; w++) {
+      const outcome = await executeWave(run, workflow, waves[w], agentMap);
       if (outcome === "paused") {
         const file = await saveRun(run);
         emitSummary(run, file);
@@ -117,75 +130,105 @@ export async function executeWorkflow(
   return run;
 }
 
-async function executeStep(
+async function executeWave(
   run: Run,
   workflow: Workflow,
-  step: Step,
+  wave: Step[],
   agentMap: Map<string, Agent>,
 ): Promise<"ok" | "paused"> {
-  const agent = agentMap.get(step.agentId);
-  if (!agent) throw new Error(`Unknown agent: ${step.agentId}`);
+  const prepared: Array<{
+    step: Step;
+    agent: Agent;
+    tool: Agent["tools"][number];
+    data: Record<string, unknown>;
+  }> = [];
 
-  const tool = agent.tools.find((t) => t.name === step.toolName);
-  if (!tool) {
-    throw new Error(`Agent ${agent.id} has no tool ${step.toolName}`);
+  for (const step of wave) {
+    const agent = agentMap.get(step.agentId);
+    if (!agent) throw new Error(`Unknown agent: ${step.agentId}`);
+
+    const tool = agent.tools.find((t) => t.name === step.toolName);
+    if (!tool) {
+      throw new Error(`Agent ${agent.id} has no tool ${step.toolName}`);
+    }
+
+    const args = interpolate(step.args, run) as Record<string, unknown>;
+    const parsed = tool.parameters.safeParse(args);
+    if (!parsed.success) {
+      throw new Error(`Invalid args for ${tool.name}: ${parsed.error.message}`);
+    }
+
+    const alreadyApproved = run.approvedStepIds?.includes(step.id);
+    if (tool.irreversible && !workflow.autoApprove && !alreadyApproved) {
+      run.status = "awaiting_approval";
+      run.pausedStepId = step.id;
+      appendAudit(run, {
+        type: "human_input",
+        agentId: agent.id,
+        stepId: step.id,
+        content: {
+          reason: "irreversible tool requires approval",
+          tool: tool.name,
+          args: parsed.data,
+          waveSize: wave.length,
+        },
+      });
+      return "paused";
+    }
+
+    prepared.push({
+      step,
+      agent,
+      tool,
+      data: parsed.data as Record<string, unknown>,
+    });
   }
 
-  const args = interpolate(step.args, run) as Record<string, unknown>;
-  const parsed = tool.parameters.safeParse(args);
-  if (!parsed.success) {
-    throw new Error(
-      `Invalid args for ${tool.name}: ${parsed.error.message}`,
-    );
-  }
-
-  const alreadyApproved = run.approvedStepIds?.includes(step.id);
-  if (tool.irreversible && !workflow.autoApprove && !alreadyApproved) {
-    run.status = "awaiting_approval";
-    run.pausedStepId = step.id;
+  if (wave.length > 1) {
     appendAudit(run, {
-      type: "human_input",
-      agentId: agent.id,
-      stepId: step.id,
+      type: "decision",
       content: {
-        reason: "irreversible tool requires approval",
-        tool: tool.name,
-        args: parsed.data,
+        kind: "parallel_wave",
+        stepIds: wave.map((s) => s.id),
       },
     });
-    return "paused";
   }
 
-  appendAudit(run, {
-    type: "tool_call",
-    agentId: agent.id,
-    stepId: step.id,
-    content: { tool: tool.name, args: parsed.data },
-  });
+  const results = await Promise.all(
+    prepared.map(async ({ step, agent, tool, data }) => {
+      appendAudit(run, {
+        type: "tool_call",
+        agentId: agent.id,
+        stepId: step.id,
+        content: { tool: tool.name, args: data },
+      });
 
-  const ctx: ToolContext = {
-    runId: run.id,
-    agentId: agent.id,
-    stepId: step.id,
-    memory: run.memory,
-    audit: (type, content) =>
-      appendAudit(run, { type, agentId: agent.id, stepId: step.id, content }),
-  };
+      const ctx: ToolContext = {
+        runId: run.id,
+        agentId: agent.id,
+        stepId: step.id,
+        memory: run.memory,
+        audit: (type, content) =>
+          appendAudit(run, { type, agentId: agent.id, stepId: step.id, content }),
+      };
 
-  const result = await tool.execute(
-    parsed.data as Record<string, unknown>,
-    ctx,
+      const result = await tool.execute(data, ctx);
+
+      appendAudit(run, {
+        type: "tool_result",
+        agentId: agent.id,
+        stepId: step.id,
+        content: { tool: tool.name, result },
+      });
+
+      return { step, result };
+    }),
   );
 
-  appendAudit(run, {
-    type: "tool_result",
-    agentId: agent.id,
-    stepId: step.id,
-    content: { tool: tool.name, result },
-  });
-
-  if (step.writeTo) {
-    run.memory[step.writeTo] = result;
+  for (const { step, result } of results) {
+    if (step.writeTo) {
+      run.memory[step.writeTo] = result;
+    }
   }
   return "ok";
 }
@@ -234,7 +277,7 @@ function printUsage(): void {
   console.log(`Aether Forge orchestrator
 
 Usage:
-  npm run start:orchestrator [-- --workflow <hello|hitl|http|wf.*>]
+  npm run start:orchestrator [-- --workflow <hello|hitl|http|parallel|wf.*>]
   npm run start:orchestrator -- --list
   npm run start:orchestrator -- --approve <runId>
   npm run start:orchestrator -- --reject <runId>

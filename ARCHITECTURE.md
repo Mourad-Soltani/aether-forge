@@ -47,7 +47,7 @@ Resume (`--approve` / `--reject` or `POST /runs/:id/approve|reject`):
 - reject → `decision` audit + `failed`
 - approve → append step to `approvedStepIds`, continue from `pausedStepId`
 
-Parallel steps are specified in types (`mode: "parallel"`) but **not executed in parallel yet** — sequential fallback only.
+Parallel steps: consecutive `mode: "parallel"` steps form a wave executed with `Promise.all`. HITL is checked for the whole wave before any tool in the wave runs. Distinct `writeTo` keys required inside a wave.
 
 ## Memory (v0.1)
 Run-scoped `Record<string, unknown>`. Steps can `writeTo` a key. Later steps read `memory[key]` via `{{memory.key}}` interpolation in args.
@@ -85,10 +85,11 @@ Live `wf.github` and Slack remain operator-env only.
 - Real (env-gated): `github_create_issue` (irreversible; `GITHUB_TOKEN` or `GH_TOKEN`; `AETHER_GITHUB_DRY_RUN=1` simulates without API)
 - Real (env-gated): `slack_notify` (irreversible; `SLACK_WEBHOOK_URL` or `args.webhookUrl`; `AETHER_SLACK_DRY_RUN=1` simulates without HTTP)
 - Real (sandboxed): `workspace_read`, `workspace_write` (irreversible write; root `data/workspace` or `AETHER_WORKSPACE_ROOT`; `AETHER_WORKSPACE_DRY_RUN=1` skips disk I/O)
+- Demo: `wf.parallel` / `wf.parallel.hitl` — consecutive parallel steps (Session 13)
 
 ## MVP Scope (first 4–6 weeks of daily sessions)
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
-2. Simple sequential execution engine — **done v0.1**; parallel next
+2. Simple sequential execution engine — **done v0.1**; parallel waves — **Session 13**
 3. 3–5 tools (file system, HTTP, GitHub, Slack webhook, LLM call) — HTTP + GitHub Issues + Slack webhook + sandboxed files **done**; LLM call still later
 4. One vertical demo workflow — **hello-workflow mocked; wf.http live GET done; wf.github defined (live exec pending rotated token); wf.slack defined (live exec pending webhook); wf.files defined Session 11; demo.sh packaging done Session 6; --json Session 7; unit tests Session 8; slack dry-run Session 10; files dry-run Session 11**
 5. Basic Next.js UI showing runs + audit trail — **skeleton Session 3; token field Session 4; filters + live refresh Session 5**
@@ -143,3 +144,10 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Keys stay in env (`AETHER_LLM_API_KEY` / `XAI_API_KEY` / `OPENAI_API_KEY`). Never in repo.
 - `AETHER_LLM_DRY_RUN=1|true|yes` returns a canned completion. `wf.llm` uses `autoApprove: true` because the tool is not irreversible.
 - Default base URL is `https://api.x.ai/v1` when `XAI_API_KEY` is set, else OpenAI.
+
+
+## Decisions (Session 13)
+- Consecutive `mode: "parallel"` steps form a wave. Default / `sequential` steps are solo waves.
+- A wave does not start until every irreversible step in it is approved (or `autoApprove`).
+- Memory writes apply after the wave settles. Parallel siblings must use distinct `writeTo` keys.
+- `wf.parallel` is autoApprove. `wf.parallel.hitl` pauses before the wave.
