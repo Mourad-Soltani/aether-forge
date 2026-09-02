@@ -8,12 +8,12 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 
 ```bash
 npm install
-npm test                     # node:test — RunSummary + persist id contract
-npm run demo                 # hello → http → hitl (no secrets)
+npm test                     # node:test — RunSummary, persist, audit, github dry-run
+npm run demo                 # hello → http → hitl → github dry-run (no secrets)
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
-npm run start:orchestrator -- --workflow github
+AETHER_GITHUB_DRY_RUN=1 npm run start:orchestrator -- --workflow github
 npm run start:orchestrator -- --list
 npm run start:orchestrator -- --json --workflow hello
 ```
@@ -40,7 +40,8 @@ Optional env (never commit values):
 
 ```
 AETHER_API_TOKEN=          # gates the control API
-GITHUB_TOKEN=              # enables github_create_issue
+AETHER_GITHUB_DRY_RUN=1    # simulate github_create_issue (no live issue)
+GITHUB_TOKEN=              # live github_create_issue (operator-only; never paste in chat)
 SLACK_WEBHOOK_URL=         # enables slack_notify
 AETHER_DEMO_GITHUB_OWNER=Mourad-Soltani
 AETHER_DEMO_GITHUB_REPO=aether-forge
@@ -54,13 +55,14 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 
 - `src/` – core orchestrator, types, agents, tools
 - `src/summary.ts` – `RunSummary` Zod contract + stdout parse helper
+- `src/audit.ts` – append-only audit + secret redaction
 - `src/api.ts` – loopback control API (runs + HITL + optional token)
 - `src/auth.ts` – API token check
 - `src/tools/http.ts` – real HTTP connector
-- `src/tools/github.ts` – GitHub Issues connector (env token)
+- `src/tools/github.ts` – GitHub Issues connector (env token or dry-run)
 - `src/tools/slack.ts` – Slack incoming webhook
 - `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
-- `demo.sh` – secret-free walkthrough of hello → http → hitl (JSON mode)
+- `demo.sh` – secret-free walkthrough including `wf.github` dry-run
 - `tests/` – node:test unit tests
 - `packages/` – shared packages
 - `PROGRESS.md` – living handoff log (read this first every session)

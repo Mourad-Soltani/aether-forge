@@ -9,18 +9,33 @@ const CreateIssueArgs = z.object({
   labels: z.array(z.string()).optional(),
 });
 
+export function isGithubDryRun(): boolean {
+  const v = (process.env.AETHER_GITHUB_DRY_RUN ?? "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 /**
  * Creates a GitHub Issue via REST API.
  * Token is read from GITHUB_TOKEN or GH_TOKEN env — never from repo files.
+ * Set AETHER_GITHUB_DRY_RUN=1 to simulate without calling GitHub.
  */
 export const githubCreateIssue: Tool = {
   name: "github_create_issue",
   description:
-    "Create a GitHub issue. Requires GITHUB_TOKEN in the environment. Irreversible.",
+    "Create a GitHub issue. Requires GITHUB_TOKEN unless AETHER_GITHUB_DRY_RUN=1. Irreversible.",
   parameters: CreateIssueArgs,
   irreversible: true,
   async execute(args) {
     const parsed = CreateIssueArgs.parse(args);
+    if (isGithubDryRun()) {
+      return {
+        dryRun: true,
+        issueNumber: 0,
+        title: parsed.title,
+        url: `https://github.com/${parsed.owner}/${parsed.repo}/issues/dry-run`,
+        state: "open",
+      };
+    }
     const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
     if (!token) {
       throw new Error(
@@ -56,6 +71,7 @@ export const githubCreateIssue: Tool = {
       );
     }
     return {
+      dryRun: false,
       issueNumber: data.number,
       title: data.title,
       url: data.html_url,

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Aether Forge — secret-free local demo
-# Walks wf.hello (headless) → wf.http (live GET) → wf.hitl (pause + approve).
+# Walks wf.hello → wf.http → wf.hitl → wf.github dry-run (pause + approve).
 # Does not require GITHUB_TOKEN or SLACK_WEBHOOK_URL.
 set -euo pipefail
 
@@ -63,21 +63,21 @@ expect_status() {
   ' "$json" "$want"
 }
 
-echo "==> 1/3  wf.hello (autoApprove, stubs only)"
+echo "==> 1/4  wf.hello (autoApprove, stubs only)"
 HELLO_RAW="$(run_orch --workflow hello 2> >(tee /dev/stderr >&2))"
 HELLO_JSON="$(printf '%s\n' "$HELLO_RAW" | parse_summary)"
 HELLO_ID="$(expect_status "$HELLO_JSON" completed)"
 echo "    run: $HELLO_ID"
 
 echo
-echo "==> 2/3  wf.http (live GET jsonplaceholder, no secrets)"
+echo "==> 2/4  wf.http (live GET jsonplaceholder, no secrets)"
 HTTP_RAW="$(run_orch --workflow http 2> >(tee /dev/stderr >&2))"
 HTTP_JSON="$(printf '%s\n' "$HTTP_RAW" | parse_summary)"
 HTTP_ID="$(expect_status "$HTTP_JSON" completed)"
 echo "    run: $HTTP_ID"
 
 echo
-echo "==> 3/3  wf.hitl (pause at irreversible stub, then approve)"
+echo "==> 3/4  wf.hitl (pause at irreversible stub, then approve)"
 HITL_RAW="$(run_orch --workflow hitl 2> >(tee /dev/stderr >&2))"
 HITL_JSON="$(printf '%s\n' "$HITL_RAW" | parse_summary)"
 HITL_ID="$(expect_status "$HITL_JSON" awaiting_approval)"
@@ -90,16 +90,34 @@ APPROVE_JSON="$(printf '%s\n' "$APPROVE_RAW" | parse_summary)"
 expect_status "$APPROVE_JSON" completed >/dev/null
 
 echo
+echo "==> 4/4  wf.github dry-run (HITL, no token, no live issue)"
+export AETHER_GITHUB_DRY_RUN=1
+GH_RAW="$(run_orch --workflow github 2> >(tee /dev/stderr >&2))"
+GH_JSON="$(printf '%s\n' "$GH_RAW" | parse_summary)"
+GH_ID="$(expect_status "$GH_JSON" awaiting_approval)"
+echo "    paused run: $GH_ID"
+
+echo
+echo "==> approve $GH_ID (dry-run issue)"
+GH_APPROVE_RAW="$(run_orch --approve "$GH_ID" 2> >(tee /dev/stderr >&2))"
+GH_APPROVE_JSON="$(printf '%s\n' "$GH_APPROVE_RAW" | parse_summary)"
+expect_status "$GH_APPROVE_JSON" completed >/dev/null
+unset AETHER_GITHUB_DRY_RUN || true
+
+echo
 echo "==> recent runs"
 run_orch --list 2>/dev/null || true
 
 echo
 echo "Demo OK"
-echo "  hello: $HELLO_ID"
-echo "  http:  $HTTP_ID"
-echo "  hitl:  $HITL_ID (paused then approved)"
+echo "  hello:   $HELLO_ID"
+echo "  http:    $HTTP_ID"
+echo "  hitl:    $HITL_ID (paused then approved)"
+echo "  github:  $GH_ID (dry-run pause then approve)"
 echo
-echo "Optional next (do not put tokens in git or chat):"
+echo "Live GitHub issue create is still operator-only:"
+echo "  # rotate any token that appeared in chat; do not paste tokens here"
+echo "  unset AETHER_GITHUB_DRY_RUN"
 echo "  export GITHUB_TOKEN=...   # issues:write on one repo only"
 echo "  npm run start:orchestrator -- --workflow github"
 echo "  npm run start:orchestrator -- --approve <runId>"

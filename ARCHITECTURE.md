@@ -70,7 +70,7 @@ Token: `NEXT_PUBLIC_AETHER_API_TOKEN` or localStorage `aether.apiToken` (local o
 Session 5: list page filters by status and workflow id (client-side). Optional 5s poll (`useIntervalRefresh`) on list + detail. Detail poll stops on terminal statuses.
 
 ## Demo packaging (Session 6)
-`demo.sh` / `npm run demo` runs `wf.hello`, `wf.http`, then `wf.hitl` + `--approve`.
+`demo.sh` / `npm run demo` runs `wf.hello`, `wf.http`, `wf.hitl` + `--approve`, then `wf.github` with `AETHER_GITHUB_DRY_RUN=1`.
 No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; human logs go to stderr. `demo.sh` parses that object instead of scraping `Run <status>: <id>`.
 `wf.github` and Slack remain operator-env only.
 
@@ -82,7 +82,7 @@ No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; h
 ## Built-in tools
 - Stubs: `research_stub`, `summarize_stub`, `create_ticket_stub` (irreversible), `notify_stub`
 - Real: `http_request` (http/https only, 10s default timeout)
-- Real (env-gated): `github_create_issue` (irreversible; `GITHUB_TOKEN` or `GH_TOKEN`)
+- Real (env-gated): `github_create_issue` (irreversible; `GITHUB_TOKEN` or `GH_TOKEN`; `AETHER_GITHUB_DRY_RUN=1` simulates without API)
 - Real (env-gated): `slack_notify` (`SLACK_WEBHOOK_URL` or `args.webhookUrl`)
 
 ## MVP Scope (first 4–6 weeks of daily sessions)
@@ -113,3 +113,12 @@ No secrets. Session 7: orchestrator `--json` emits one `RunSummary` on stdout; h
 - Session 6: secret-free demo path is `npm run demo`. Chat-pasted PATs are compromised and must not be used by the daily builder.
 - Session 7: `--json` is the machine contract for scripts. Human-readable CLI remains the default.
 - Session 8: `RunSummary` schema lives in `src/summary.ts`. Tests use Node built-in `node:test` via `tsx --test`.
+
+## Audit redaction (Session 9)
+`appendAudit` runs `sanitizeAuditContent` on every event payload.
+Redacts `github_pat_*`, `Bearer …`, Slack incoming-webhook URLs, and keys matching token/secret/password/authorization/api_key/webhook.
+Dry-run GitHub results still go through HITL when `autoApprove` is false.
+
+## Decisions (Session 9)
+- Chat-pasted PATs remain unusable for live `wf.github`. Dry-run is the secret-free proof path.
+- Dry-run does not weaken HITL. It only skips the GitHub HTTP call.

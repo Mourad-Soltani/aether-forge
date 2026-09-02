@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 8 — 2026-09-02)
+## Current Status (Session 9 — 2026-09-02)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -26,12 +26,13 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Packaging / demo script (`demo.sh` + `npm run demo`) walks hello → http → hitl without secrets
 - [x] Orchestrator `--json` flag (Session 7) — one `RunSummary` on stdout; human logs on stderr; `demo.sh` parses JSON instead of scraping console text
 - [x] Session 8 — `src/summary.ts` Zod `RunSummary` contract + `parseRunSummaryFromStdout`; `npm test` via `tsx --test tests/*.test.ts`
-- [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied token **outside git/chat**)
+- [x] Session 9 — `AETHER_GITHUB_DRY_RUN` simulates `github_create_issue` (no live issue, no token). Audit redaction in `appendAudit`. `demo.sh` now includes `wf.github` dry-run pause → approve.
+- [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + buyer shortlist (after one recorded live GitHub proof)
 
 ## Next Up (highest priority)
-1. Execute `wf.github` once with a human-supplied least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit.
+1. Execute `wf.github` once with a human-supplied **rotated**, least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit. Do not reuse any PAT that appeared in a chat prompt.
 2. Optional Slack demo path when `SLACK_WEBHOOK_URL` is present (do not commit the URL).
 3. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
 4. Optional next engine slice: sequential-fallback note remains; parallel step execution still deferred.
@@ -45,7 +46,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Persistence for MVP: `data/runs/<runId>.json`.
 - Arg interpolation: `{{memory.<key>}}` and `{{run.id}}` only.
 - Hello-workflow uses `autoApprove: true` so daily CI / headless runs complete.
-- HTTP tool blocks non-http(s) URLs. GitHub issue create is irreversible and refuses to run without env token.
+- HTTP tool blocks non-http(s) URLs. GitHub issue create is irreversible and refuses to run without env token (unless dry-run).
 - HITL pause stores `pausedStepId` + `approvedStepIds` on the Run; resume continues from that step.
 - Workflow registry keys: `hello` / `wf.hello`, `hitl` / `wf.hitl`, `http` / `wf.http`, `github` / `wf.github`.
 - Dashboard never reads `data/runs` from the browser. All list/get/approve/reject go through `src/api.ts`.
@@ -60,9 +61,10 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Session 6: `demo.sh` is the canonical secret-free proof path.
 - Session 7: `--json` is the machine contract. `demo.sh` invokes `npx tsx src/orchestrator.ts --json` so npm script banners do not pollute stdout.
 - Session 8: tests use Node built-in `node:test`. `RunSummary` schema is the source of truth for demo parse.
+- Session 9: `AETHER_GITHUB_DRY_RUN=1|true|yes` simulates issue create. HITL still applies. Audit payloads are sanitized before persist.
 
 ## Handoff for next session
-Session 8 ships unit tests + a typed `RunSummary` parse helper. Live GitHub issue create is still blocked on a **rotated, least-privilege** token that never enters chat or git. A PAT pasted into a chat prompt is compromised — rotate it; do not use it from the daily builder.
+Session 9 ships GitHub dry-run + audit redaction and extends `npm run demo` to cover `wf.github` without creating a live issue. Live GitHub issue create is still blocked on a **rotated, least-privilege** token that never enters chat or git.
 
 ```bash
 npm install
@@ -74,7 +76,8 @@ npm run start:api
 npm run dev:web
 # open http://localhost:3000 — paste the same token, Save token
 # operator-only, never in chat:
-# export GITHUB_TOKEN=...   # issues:write on Mourad-Soltani/aether-forge only
+# unset AETHER_GITHUB_DRY_RUN
+# export GITHUB_TOKEN=...   # issues:write on Mourad-Soltani/aether-forge only; rotated
 # npm run start:orchestrator -- --workflow github
 # npm run start:orchestrator -- --approve <runId>
 ```
