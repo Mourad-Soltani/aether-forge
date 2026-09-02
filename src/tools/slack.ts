@@ -6,16 +6,33 @@ const SlackArgs = z.object({
   webhookUrl: z.string().url().optional(),
 });
 
+export function isSlackDryRun(): boolean {
+  const v = (process.env.AETHER_SLACK_DRY_RUN ?? "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 /**
  * Posts a message to a Slack incoming webhook.
  * URL from args.webhookUrl or SLACK_WEBHOOK_URL. Never stored in git.
+ * Set AETHER_SLACK_DRY_RUN=1 to simulate without calling Slack.
+ * Marked irreversible so HITL applies unless autoApprove.
  */
 export const slackNotify: Tool = {
   name: "slack_notify",
-  description: "Post text to a Slack incoming webhook (SLACK_WEBHOOK_URL).",
+  description:
+    "Post text to a Slack incoming webhook. Requires SLACK_WEBHOOK_URL unless AETHER_SLACK_DRY_RUN=1. Irreversible.",
   parameters: SlackArgs,
+  irreversible: true,
   async execute(args) {
     const parsed = SlackArgs.parse(args);
+    if (isSlackDryRun()) {
+      return {
+        dryRun: true,
+        delivered: true,
+        status: 0,
+        preview: parsed.text.slice(0, 200),
+      };
+    }
     const webhook = parsed.webhookUrl || process.env.SLACK_WEBHOOK_URL;
     if (!webhook) {
       throw new Error("slack_notify requires SLACK_WEBHOOK_URL or args.webhookUrl");
@@ -38,6 +55,6 @@ export const slackNotify: Tool = {
     if (!res.ok) {
       throw new Error(`Slack webhook ${res.status}: ${body.slice(0, 200)}`);
     }
-    return { delivered: true, status: res.status, response: body.slice(0, 200) };
+    return { dryRun: false, delivered: true, status: res.status, response: body.slice(0, 200) };
   },
 };

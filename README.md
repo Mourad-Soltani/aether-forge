@@ -8,12 +8,13 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 
 ```bash
 npm install
-npm test                     # node:test — RunSummary, persist, audit, github dry-run
-npm run demo                 # hello → http → hitl → github dry-run (no secrets)
+npm test                     # node:test — RunSummary, persist, audit, github/slack dry-run
+npm run demo                 # hello → http → hitl → github dry-run → slack dry-run
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
 AETHER_GITHUB_DRY_RUN=1 npm run start:orchestrator -- --workflow github
+AETHER_SLACK_DRY_RUN=1 npm run start:orchestrator -- --workflow slack
 npm run start:orchestrator -- --list
 npm run start:orchestrator -- --json --workflow hello
 ```
@@ -41,8 +42,9 @@ Optional env (never commit values):
 ```
 AETHER_API_TOKEN=          # gates the control API
 AETHER_GITHUB_DRY_RUN=1    # simulate github_create_issue (no live issue)
+AETHER_SLACK_DRY_RUN=1     # simulate slack_notify (no webhook call)
 GITHUB_TOKEN=              # live github_create_issue (operator-only; never paste in chat)
-SLACK_WEBHOOK_URL=         # enables slack_notify
+SLACK_WEBHOOK_URL=         # live slack_notify (operator-only; never commit)
 AETHER_DEMO_GITHUB_OWNER=Mourad-Soltani
 AETHER_DEMO_GITHUB_REPO=aether-forge
 AETHER_API_PORT=8787
@@ -60,9 +62,9 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/auth.ts` – API token check
 - `src/tools/http.ts` – real HTTP connector
 - `src/tools/github.ts` – GitHub Issues connector (env token or dry-run)
-- `src/tools/slack.ts` – Slack incoming webhook
+- `src/tools/slack.ts` – Slack incoming webhook (env webhook or dry-run; HITL)
 - `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
-- `demo.sh` – secret-free walkthrough including `wf.github` dry-run
+- `demo.sh` – secret-free walkthrough including `wf.github` and `wf.slack` dry-run
 - `tests/` – node:test unit tests
 - `packages/` – shared packages
 - `PROGRESS.md` – living handoff log (read this first every session)

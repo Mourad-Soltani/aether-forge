@@ -136,6 +136,7 @@ export default function HomePage() {
                 { id: "wf.hitl", name: "hitl" },
                 { id: "wf.http", name: "http" },
                 { id: "wf.github", name: "github" },
+                { id: "wf.slack", name: "slack" },
               ]
           ).map((w) => (
             <option key={w.id} value={w.id}>
