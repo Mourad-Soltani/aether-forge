@@ -136,3 +136,10 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - `AETHER_WORKSPACE_DRY_RUN=1|true|yes` skips disk I/O. HITL still applies.
 - Max text payload 64 KiB.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Decisions (Session 12)
+- `llm_complete` talks to an OpenAI-compatible `/chat/completions` endpoint.
+- Keys stay in env (`AETHER_LLM_API_KEY` / `XAI_API_KEY` / `OPENAI_API_KEY`). Never in repo.
+- `AETHER_LLM_DRY_RUN=1|true|yes` returns a canned completion. `wf.llm` uses `autoApprove: true` because the tool is not irreversible.
+- Default base URL is `https://api.x.ai/v1` when `XAI_API_KEY` is set, else OpenAI.

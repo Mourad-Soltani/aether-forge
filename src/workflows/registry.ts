@@ -4,6 +4,7 @@ import { httpDemoAgents, httpDemoWorkflow } from "./http-demo.js";
 import { githubDemoAgents, githubDemoWorkflow } from "./github-demo.js";
 import { slackDemoAgents, slackDemoWorkflow } from "./slack-demo.js";
 import { filesDemoAgents, filesDemoWorkflow } from "./files-demo.js";
+import { llmDemoAgents, llmDemoWorkflow } from "./llm-demo.js";
 
 export interface RegisteredWorkflow {
   workflow: Workflow;
@@ -23,6 +24,8 @@ export const workflowRegistry: Record<string, RegisteredWorkflow> = {
   slack: { workflow: slackDemoWorkflow, agents: slackDemoAgents },
   [filesDemoWorkflow.id]: { workflow: filesDemoWorkflow, agents: filesDemoAgents },
   files: { workflow: filesDemoWorkflow, agents: filesDemoAgents },
+  [llmDemoWorkflow.id]: { workflow: llmDemoWorkflow, agents: llmDemoAgents },
+  llm: { workflow: llmDemoWorkflow, agents: llmDemoAgents },
 };
 
 export function resolveWorkflow(id: string): RegisteredWorkflow {

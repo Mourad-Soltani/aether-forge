@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 11 — 2026-09-03)
+## Current Status (Session 12 — 2026-09-03)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -29,6 +29,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Session 9 — `AETHER_GITHUB_DRY_RUN` simulates `github_create_issue` (no live issue, no token). Audit redaction in `appendAudit`. `demo.sh` now includes `wf.github` dry-run pause → approve.
 - [x] Session 10 — `AETHER_SLACK_DRY_RUN` simulates `slack_notify`. `slack_notify` is irreversible. `wf.slack` HITL workflow. `demo.sh` includes slack dry-run pause → approve. Tests in `tests/slack.test.ts`.
 - [x] Session 11 — sandboxed `workspace_read` / `workspace_write` (`data/workspace` or `AETHER_WORKSPACE_ROOT`). `workspace_write` is irreversible. `wf.files` HITL. `AETHER_WORKSPACE_DRY_RUN`. Tests in `tests/workspace.test.ts`. `demo.sh` includes files dry-run pause → approve.
+- [x] Session 12 — env-gated `llm_complete` (OpenAI-compatible). `AETHER_LLM_DRY_RUN` simulates without a provider call. `wf.llm` autoApprove demo. `demo.sh` includes llm dry-run. Tests in `tests/llm.test.ts`.
 - [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Real (non-dry-run) workspace write against local `data/workspace` is available without secrets; optional operator proof
@@ -39,7 +40,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 2. Optional live Slack path when operator sets `SLACK_WEBHOOK_URL` locally (do not commit the URL). Dry-run is the default proof path.
 3. Optional real workspace write: unset `AETHER_WORKSPACE_DRY_RUN` and run `wf.files` so `data/workspace/briefs/demo.md` is written after approve.
 4. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
-5. Optional next engine slice: LLM tool (env-gated) or sequential-fallback note remains; parallel step execution still deferred.
+5. Optional next engine slice: parallel step execution still deferred. Live `wf.llm` when operator sets a provider key locally (do not commit keys).
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -52,7 +53,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Hello-workflow uses `autoApprove: true` so daily CI / headless runs complete.
 - HTTP tool blocks non-http(s) URLs. GitHub issue create is irreversible and refuses to run without env token (unless dry-run).
 - HITL pause stores `pausedStepId` + `approvedStepIds` on the Run; resume continues from that step.
-- Workflow registry keys: `hello` / `wf.hello`, `hitl` / `wf.hitl`, `http` / `wf.http`, `github` / `wf.github`, `slack` / `wf.slack`, `files` / `wf.files`.
+- Workflow registry keys: `hello` / `wf.hello`, `hitl` / `wf.hitl`, `http` / `wf.http`, `github` / `wf.github`, `slack` / `wf.slack`, `files` / `wf.files`, `llm` / `wf.llm`.
 - Dashboard never reads `data/runs` from the browser. All list/get/approve/reject go through `src/api.ts`.
 - API binds to `127.0.0.1:8787` by default (`AETHER_API_PORT`, `AETHER_CORS_ORIGIN`).
 - Run ids are restricted to `[a-zA-Z0-9._-]` before filesystem access.
@@ -68,9 +69,10 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Session 9: `AETHER_GITHUB_DRY_RUN=1|true|yes` simulates issue create. HITL still applies. Audit payloads are sanitized before persist.
 - Session 10: `AETHER_SLACK_DRY_RUN=1|true|yes` simulates Slack post. `slack_notify` is irreversible. Dry-run does not weaken HITL.
 - Session 11: workspace files are sandboxed. `workspace_write` is irreversible. `AETHER_WORKSPACE_DRY_RUN` skips disk I/O. Paths cannot escape the root.
+- Session 12: `llm_complete` is reversible. `AETHER_LLM_DRY_RUN` skips the provider call. Keys from `AETHER_LLM_API_KEY` / `XAI_API_KEY` / `OPENAI_API_KEY` at execute time. Default base is xAI when `XAI_API_KEY` is set.
 
 ## Handoff for next session
-Session 11 ships sandboxed workspace file tools + `wf.files` HITL and extends `npm run demo` to cover file write without touching disk (dry-run). Live GitHub/Slack remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 12 ships env-gated `llm_complete` + `wf.llm` and extends `npm run demo` with an LLM dry-run (no provider key). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 
 ```bash
 npm install
@@ -88,6 +90,9 @@ npm run dev:web
 # npm run start:orchestrator -- --approve <runId>
 # unset AETHER_SLACK_DRY_RUN
 # export SLACK_WEBHOOK_URL=...
+# unset AETHER_LLM_DRY_RUN
+# export XAI_API_KEY=...   # or OPENAI_API_KEY / AETHER_LLM_API_KEY
+# npm run start:orchestrator -- --workflow llm
 # npm run start:orchestrator -- --workflow slack
 # unset AETHER_WORKSPACE_DRY_RUN
 # npm run start:orchestrator -- --workflow files

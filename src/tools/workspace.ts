@@ -30,6 +30,10 @@ export function resolveWorkspacePath(rel: string): string {
   if (!rel || !REL_RE.test(rel)) {
     throw new Error("workspace path invalid (use relative segments [a-zA-Z0-9._-])");
   }
+  const segments = rel.split("/").filter(Boolean);
+  if (segments.some((s) => s === "." || s === "..")) {
+    throw new Error("workspace path invalid (no . or .. segments)");
+  }
   const root = workspaceRoot();
   const resolved = path.resolve(root, rel);
   const relToRoot = path.relative(root, resolved);

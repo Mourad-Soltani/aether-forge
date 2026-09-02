@@ -9,13 +9,14 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 ```bash
 npm install
 npm test                     # node:test — RunSummary, persist, audit, connectors
-npm run demo                 # hello → http → hitl → github/slack/files dry-run
+npm run demo                 # hello → http → hitl → github/slack/files/llm dry-run
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
 AETHER_GITHUB_DRY_RUN=1 npm run start:orchestrator -- --workflow github
 AETHER_SLACK_DRY_RUN=1 npm run start:orchestrator -- --workflow slack
 AETHER_WORKSPACE_DRY_RUN=1 npm run start:orchestrator -- --workflow files
+AETHER_LLM_DRY_RUN=1 npm run start:orchestrator -- --workflow llm
 npm run start:orchestrator -- --list
 npm run start:orchestrator -- --json --workflow hello
 ```
@@ -45,6 +46,10 @@ AETHER_API_TOKEN=          # gates the control API
 AETHER_GITHUB_DRY_RUN=1    # simulate github_create_issue (no live issue)
 AETHER_SLACK_DRY_RUN=1     # simulate slack_notify (no webhook call)
 AETHER_WORKSPACE_DRY_RUN=1 # simulate workspace file I/O
+AETHER_LLM_DRY_RUN=1        # simulate llm_complete (no provider call)
+AETHER_LLM_API_KEY=         # live llm_complete (operator-only)
+AETHER_LLM_BASE_URL=        # OpenAI-compatible base (optional)
+AETHER_LLM_MODEL=           # default grok-3 if XAI_API_KEY else gpt-4o-mini
 AETHER_WORKSPACE_ROOT=     # default ./data/workspace
 GITHUB_TOKEN=              # live github_create_issue (operator-only; never paste in chat)
 SLACK_WEBHOOK_URL=         # live slack_notify (operator-only; never commit)
@@ -67,8 +72,9 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/tools/github.ts` – GitHub Issues connector (env token or dry-run)
 - `src/tools/slack.ts` – Slack incoming webhook (env webhook or dry-run; HITL)
 - `src/tools/workspace.ts` – sandboxed file read/write (`data/workspace`)
+- `src/tools/llm.ts` – OpenAI-compatible chat completion (env key or dry-run)
 - `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
-- `demo.sh` – secret-free walkthrough including github/slack/files dry-run
+- `demo.sh` – secret-free walkthrough including github/slack/files/llm dry-run
 - `tests/` – node:test unit tests
 - `packages/` – shared packages
 - `PROGRESS.md` – living handoff log (read this first every session)
