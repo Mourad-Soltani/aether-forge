@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 15 — 2026-09-03)
+## Current Status (Session 16 — 2026-09-04)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -33,6 +33,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Session 13 — parallel waves (`mode: "parallel"` consecutive steps via `Promise.all`). HITL checked before the wave starts. `wf.parallel` + `wf.parallel.hitl`. Tests in `tests/parallel.test.ts`. `demo.sh` includes `wf.parallel`.
 - [x] Session 14 — audit export: `src/export.ts` `aether-audit-v1` bundle, CLI `--export-audit`, `GET /runs/:id/audit`, dashboard download. Memory values omitted; events already redacted. Tests in `tests/export.test.ts`. `demo.sh` checks JSONL header.
 - [x] Session 15 — vertical compose workflow `wf.vertical` / `vertical`: parallel live HTTP + research → `llm_complete` → HITL `workspace_write` → notify. Tests in `tests/vertical.test.ts`. `demo.sh` includes vertical dry-run pause → approve.
+- [x] Session 16 — step `timeoutMs` + `withTimeout` (`src/timeout.ts`). `sleep_stub`. `wf.timeout.ok` / `wf.timeout.fail`. Tests in `tests/timeout.test.ts`. `demo.sh` includes timeout-ok.
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Real (non-dry-run) workspace write against local `data/workspace` is available without secrets; optional operator proof
@@ -43,7 +44,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 2. Optional live Slack path when operator sets `SLACK_WEBHOOK_URL` locally (do not commit the URL). Dry-run is the default proof path.
 3. Optional real workspace write: unset `AETHER_WORKSPACE_DRY_RUN` and run `wf.files` or `wf.vertical` so `data/workspace/briefs/*.md` is written after approve.
 4. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
-5. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. Step timeouts still deferred.
+5. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. AbortSignal cancellation of timed-out tools still deferred.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -56,7 +57,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Hello-workflow uses `autoApprove: true` so daily CI / headless runs complete.
 - HTTP tool blocks non-http(s) URLs. GitHub issue create is irreversible and refuses to run without env token (unless dry-run).
 - HITL pause stores `pausedStepId` + `approvedStepIds` on the Run; resume continues from that step.
-- Workflow registry keys: `hello` / `wf.hello`, `hitl` / `wf.hitl`, `http` / `wf.http`, `github` / `wf.github`, `slack` / `wf.slack`, `files` / `wf.files`, `llm` / `wf.llm`, `parallel` / `wf.parallel`, `parallel-hitl` / `wf.parallel.hitl`, `vertical` / `wf.vertical`.
+- Workflow registry keys: `hello` / `wf.hello`, `hitl` / `wf.hitl`, `http` / `wf.http`, `github` / `wf.github`, `slack` / `wf.slack`, `files` / `wf.files`, `llm` / `wf.llm`, `parallel` / `wf.parallel`, `parallel-hitl` / `wf.parallel.hitl`, `vertical` / `wf.vertical`, `timeout-ok` / `wf.timeout.ok`, `timeout-fail` / `wf.timeout.fail`.
 - Dashboard never reads `data/runs` from the browser. All list/get/approve/reject go through `src/api.ts`.
 - API binds to `127.0.0.1:8787` by default (`AETHER_API_PORT`, `AETHER_CORS_ORIGIN`).
 - Run ids are restricted to `[a-zA-Z0-9._-]` before filesystem access.
@@ -76,9 +77,10 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Session 13: consecutive `mode: "parallel"` steps run as one wave. HITL applies to the wave before any sibling executes. Distinct `writeTo` keys inside a wave.
 - Session 14: audit export is `aether-audit-v1`. Bundle includes metadata + events, not raw memory values. CLI `--export-audit` writes JSONL to stdout. API `GET /runs/:id/audit` returns JSON bundle. Dashboard downloads JSON.
 - Session 15: `wf.vertical` is the first multi-connector product slice (HTTP + research wave → LLM → HITL file → notify). Dry-run flags stay the default demo path. Live GitHub still blocked on a rotated token supplied outside chat.
+- Session 16: step `timeoutMs` is an orchestrator race, not cooperative cancel. Max 120s. `sleep_stub` is a test/demo helper.
 
 ## Handoff for next session
-Session 15 ships `wf.vertical` (compose HTTP + research wave → LLM → HITL file → notify) on top of Session 14 audit export. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 16 ships step timeouts (`timeoutMs` + `wf.timeout.ok`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 
 ```bash
 npm install
@@ -108,6 +110,7 @@ npm run dev:web
 # npm run start:orchestrator -- --workflow parallel-hitl
 # AETHER_LLM_DRY_RUN=1 AETHER_WORKSPACE_DRY_RUN=1 npm run start:orchestrator -- --workflow vertical
 # npm run start:orchestrator -- --approve <runId>
+# npm run start:orchestrator -- --workflow timeout-ok
 ```
 
 API:

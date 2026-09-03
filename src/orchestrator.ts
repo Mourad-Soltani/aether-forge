@@ -4,6 +4,7 @@ import { auditBundleToJsonl, buildAuditBundle } from "./export.js";
 import { listRuns, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
+import { resolveStepTimeoutMs, withTimeout } from "./timeout.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
 export type { RunSummary };
@@ -213,7 +214,12 @@ async function executeWave(
           appendAudit(run, { type, agentId: agent.id, stepId: step.id, content }),
       };
 
-      const result = await tool.execute(data, ctx);
+      const timeoutMs = resolveStepTimeoutMs(step.timeoutMs);
+      const result = await withTimeout(
+        tool.execute(data, ctx),
+        timeoutMs,
+        step.id,
+      );
 
       appendAudit(run, {
         type: "tool_result",

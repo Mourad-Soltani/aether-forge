@@ -66,6 +66,8 @@ export interface Step {
   /** Write tool result into run memory under this key. */
   writeTo?: string;
   mode?: "sequential" | "parallel";
+  /** Orchestrator-level cap for this step's execute(). Does not abort the underlying I/O. */
+  timeoutMs?: number;
 }
 
 export interface Workflow {

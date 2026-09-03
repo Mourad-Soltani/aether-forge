@@ -7,6 +7,7 @@ import { filesDemoAgents, filesDemoWorkflow } from "./files-demo.js";
 import { llmDemoAgents, llmDemoWorkflow } from "./llm-demo.js";
 import { parallelDemoAgents, parallelDemoWorkflow, parallelHitlWorkflow } from "./parallel-demo.js";
 import { verticalDemoAgents, verticalDemoWorkflow } from "./vertical-demo.js";
+import { timeoutDemoAgents, timeoutOkWorkflow, timeoutFailWorkflow } from "./timeout-demo.js";
 
 export interface RegisteredWorkflow {
   workflow: Workflow;
@@ -34,6 +35,10 @@ export const workflowRegistry: Record<string, RegisteredWorkflow> = {
   "parallel-hitl": { workflow: parallelHitlWorkflow, agents: parallelDemoAgents },
   [verticalDemoWorkflow.id]: { workflow: verticalDemoWorkflow, agents: verticalDemoAgents },
   vertical: { workflow: verticalDemoWorkflow, agents: verticalDemoAgents },
+  [timeoutOkWorkflow.id]: { workflow: timeoutOkWorkflow, agents: timeoutDemoAgents },
+  "timeout-ok": { workflow: timeoutOkWorkflow, agents: timeoutDemoAgents },
+  [timeoutFailWorkflow.id]: { workflow: timeoutFailWorkflow, agents: timeoutDemoAgents },
+  "timeout-fail": { workflow: timeoutFailWorkflow, agents: timeoutDemoAgents },
 };
 
 export function resolveWorkflow(id: string): RegisteredWorkflow {

@@ -165,3 +165,11 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Parallel wave is HTTP + research (both reversible). HITL applies only to `workspace_write`.
 - Demo path sets `AETHER_LLM_DRY_RUN` and `AETHER_WORKSPACE_DRY_RUN`. Live LLM/file/GitHub stay operator-env.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Decisions (Session 16)
+- Steps may set `timeoutMs`. The orchestrator races `tool.execute` against that cap.
+- Timeout does not abort in-flight I/O (no AbortSignal on tools yet). The run is marked `failed`.
+- Cap is clamped to 120s. Invalid or non-positive `timeoutMs` is rejected at resolve time.
+- `sleep_stub` exists only to prove the cap. `wf.timeout.ok` is in `demo.sh`. `wf.timeout.fail` is test-only.
+- Chat-pasted PATs remain unusable for live `wf.github`.

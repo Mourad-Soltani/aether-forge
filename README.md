@@ -9,7 +9,7 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 ```bash
 npm install
 npm test                     # node:test — RunSummary, persist, audit, connectors
-npm run demo                 # hello → http → hitl → github/slack/files/llm dry-run → parallel → vertical
+npm run demo                 # hello → http → hitl → github/slack/files/llm dry-run → parallel → vertical → timeout-ok
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
@@ -19,6 +19,7 @@ AETHER_WORKSPACE_DRY_RUN=1 npm run start:orchestrator -- --workflow files
 AETHER_LLM_DRY_RUN=1 npm run start:orchestrator -- --workflow llm
 npm run start:orchestrator -- --workflow parallel
 AETHER_LLM_DRY_RUN=1 AETHER_WORKSPACE_DRY_RUN=1 npm run start:orchestrator -- --workflow vertical
+npm run start:orchestrator -- --workflow timeout-ok
 npm run start:orchestrator -- --list
 npm run start:orchestrator -- --json --workflow hello
 npm run start:orchestrator -- --export-audit <runId>

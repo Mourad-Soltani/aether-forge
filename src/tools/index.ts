@@ -89,6 +89,22 @@ export const notifyStub: Tool = {
   },
 };
 
+
+export const sleepStub: Tool = {
+  name: "sleep_stub",
+  description: "Test helper. Resolves after ms milliseconds. Used to prove step timeouts.",
+  parameters: z.object({
+    ms: z.number().int().nonnegative().max(30_000),
+    label: z.string().optional(),
+  }),
+  async execute(args) {
+    const ms = Number(args.ms);
+    const label = args.label ? String(args.label) : "sleep";
+    await new Promise((r) => setTimeout(r, ms));
+    return { sleptMs: ms, label };
+  },
+};
+
 export const builtinTools: Tool[] = [
   researchStub,
   summarizeStub,
@@ -100,6 +116,7 @@ export const builtinTools: Tool[] = [
   workspaceRead,
   workspaceWrite,
   llmComplete,
+  sleepStub,
 ];
 
 export function toolsByName(tools: Tool[]): Map<string, Tool> {

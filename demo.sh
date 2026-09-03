@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Aether Forge — secret-free local demo
-# Walks wf.hello → wf.http → wf.hitl → wf.github/slack/files dry-run → wf.llm dry-run → wf.parallel → wf.vertical dry-run.
+# Walks wf.hello → wf.http → wf.hitl → wf.github/slack/files dry-run → wf.llm dry-run → wf.parallel → wf.vertical dry-run → wf.timeout.ok.
 # Does not require GITHUB_TOKEN or SLACK_WEBHOOK_URL.
 set -euo pipefail
 
@@ -63,21 +63,21 @@ expect_status() {
   ' "$json" "$want"
 }
 
-echo "==> 1/9  wf.hello (autoApprove, stubs only)"
+echo "==> 1/10 wf.hello (autoApprove, stubs only)"
 HELLO_RAW="$(run_orch --workflow hello 2> >(tee /dev/stderr >&2))"
 HELLO_JSON="$(printf '%s\n' "$HELLO_RAW" | parse_summary)"
 HELLO_ID="$(expect_status "$HELLO_JSON" completed)"
 echo "    run: $HELLO_ID"
 
 echo
-echo "==> 2/9  wf.http (live GET jsonplaceholder, no secrets)"
+echo "==> 2/10 wf.http (live GET jsonplaceholder, no secrets)"
 HTTP_RAW="$(run_orch --workflow http 2> >(tee /dev/stderr >&2))"
 HTTP_JSON="$(printf '%s\n' "$HTTP_RAW" | parse_summary)"
 HTTP_ID="$(expect_status "$HTTP_JSON" completed)"
 echo "    run: $HTTP_ID"
 
 echo
-echo "==> 3/9  wf.hitl (pause at irreversible stub, then approve)"
+echo "==> 3/10 wf.hitl (pause at irreversible stub, then approve)"
 HITL_RAW="$(run_orch --workflow hitl 2> >(tee /dev/stderr >&2))"
 HITL_JSON="$(printf '%s\n' "$HITL_RAW" | parse_summary)"
 HITL_ID="$(expect_status "$HITL_JSON" awaiting_approval)"
@@ -90,7 +90,7 @@ APPROVE_JSON="$(printf '%s\n' "$APPROVE_RAW" | parse_summary)"
 expect_status "$APPROVE_JSON" completed >/dev/null
 
 echo
-echo "==> 4/9  wf.github dry-run (HITL, no token, no live issue)"
+echo "==> 4/10 wf.github dry-run (HITL, no token, no live issue)"
 export AETHER_GITHUB_DRY_RUN=1
 GH_RAW="$(run_orch --workflow github 2> >(tee /dev/stderr >&2))"
 GH_JSON="$(printf '%s\n' "$GH_RAW" | parse_summary)"
@@ -105,7 +105,7 @@ expect_status "$GH_APPROVE_JSON" completed >/dev/null
 unset AETHER_GITHUB_DRY_RUN || true
 
 echo
-echo "==> 5/9  wf.slack dry-run (HITL, no webhook)"
+echo "==> 5/10 wf.slack dry-run (HITL, no webhook)"
 export AETHER_SLACK_DRY_RUN=1
 SL_RAW="$(run_orch --workflow slack 2> >(tee /dev/stderr >&2))"
 SL_JSON="$(printf '%s\n' "$SL_RAW" | parse_summary)"
@@ -121,7 +121,7 @@ unset AETHER_SLACK_DRY_RUN || true
 
 
 echo
-echo "==> 6/9  wf.files dry-run (HITL, no disk write)"
+echo "==> 6/10 wf.files dry-run (HITL, no disk write)"
 export AETHER_WORKSPACE_DRY_RUN=1
 FS_RAW="$(run_orch --workflow files 2> >(tee /dev/stderr >&2))"
 FS_JSON="$(printf '%s\n' "$FS_RAW" | parse_summary)"
@@ -136,7 +136,7 @@ expect_status "$FS_APPROVE_JSON" completed >/dev/null
 unset AETHER_WORKSPACE_DRY_RUN || true
 
 echo
-echo "==> 7/9  wf.llm dry-run (no API key)"
+echo "==> 7/10 wf.llm dry-run (no API key)"
 export AETHER_LLM_DRY_RUN=1
 LLM_RAW="$(run_orch --workflow llm 2> >(tee /dev/stderr >&2))"
 LLM_JSON="$(printf '%s\n' "$LLM_RAW" | parse_summary)"
@@ -145,14 +145,14 @@ echo "    run: $LLM_ID"
 unset AETHER_LLM_DRY_RUN || true
 
 echo
-echo "==> 8/9  wf.parallel (two research stubs concurrent, then summarize)"
+echo "==> 8/10 wf.parallel (two research stubs concurrent, then summarize)"
 PAR_RAW="$(run_orch --workflow parallel 2> >(tee /dev/stderr >&2))"
 PAR_JSON="$(printf '%s\n' "$PAR_RAW" | parse_summary)"
 PAR_ID="$(expect_status "$PAR_JSON" completed)"
 echo "    run: $PAR_ID"
 
 echo
-echo "==> 9/9  wf.vertical dry-run (parallel HTTP+research → llm → HITL write)"
+echo "==> 9/10 wf.vertical dry-run (parallel HTTP+research → llm → HITL write)"
 export AETHER_LLM_DRY_RUN=1
 export AETHER_WORKSPACE_DRY_RUN=1
 VERT_RAW="$(run_orch --workflow vertical 2> >(tee /dev/stderr >&2))"
@@ -167,6 +167,14 @@ VERT_APPROVE_JSON="$(printf '%s\n' "$VERT_APPROVE_RAW" | parse_summary)"
 expect_status "$VERT_APPROVE_JSON" completed >/dev/null
 unset AETHER_LLM_DRY_RUN || true
 unset AETHER_WORKSPACE_DRY_RUN || true
+
+
+echo
+echo "==> 10/10 wf.timeout.ok (sleep under step timeoutMs cap)"
+TO_RAW="$(run_orch --workflow timeout-ok 2> >(tee /dev/stderr >&2))"
+TO_JSON="$(printf '%s\n' "$TO_RAW" | parse_summary)"
+TO_ID="$(expect_status "$TO_JSON" completed)"
+echo "    run: $TO_ID"
 
 echo
 echo "==> export audit JSONL for parallel run"
@@ -194,6 +202,7 @@ echo "  files:   $FS_ID (dry-run pause then approve)"
 echo "  llm:     $LLM_ID (dry-run complete)"
 echo "  parallel: $PAR_ID"
 echo "  vertical: $VERT_ID (dry-run pause then approve)"
+echo "  timeout:  $TO_ID"
 echo
 echo "Live GitHub issue create is still operator-only:"
 echo "  # rotate any token that appeared in chat; do not paste tokens here"
