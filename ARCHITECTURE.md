@@ -159,3 +159,9 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Events are already redacted by `appendAudit`; export does not re-hydrate secrets.
 - CLI `--export-audit <runId>` emits JSONL (header line + one event per line) on stdout.
 - API `GET /runs/:id/audit` returns `{ bundle }` JSON. Dashboard downloads the JSON file.
+
+## Decisions (Session 15)
+- `wf.vertical` is the first end-to-end product slice using real + stub connectors in one graph.
+- Parallel wave is HTTP + research (both reversible). HITL applies only to `workspace_write`.
+- Demo path sets `AETHER_LLM_DRY_RUN` and `AETHER_WORKSPACE_DRY_RUN`. Live LLM/file/GitHub stay operator-env.
+- Chat-pasted PATs remain unusable for live `wf.github`.

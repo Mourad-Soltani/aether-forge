@@ -6,6 +6,7 @@ import { slackDemoAgents, slackDemoWorkflow } from "./slack-demo.js";
 import { filesDemoAgents, filesDemoWorkflow } from "./files-demo.js";
 import { llmDemoAgents, llmDemoWorkflow } from "./llm-demo.js";
 import { parallelDemoAgents, parallelDemoWorkflow, parallelHitlWorkflow } from "./parallel-demo.js";
+import { verticalDemoAgents, verticalDemoWorkflow } from "./vertical-demo.js";
 
 export interface RegisteredWorkflow {
   workflow: Workflow;
@@ -31,6 +32,8 @@ export const workflowRegistry: Record<string, RegisteredWorkflow> = {
   parallel: { workflow: parallelDemoWorkflow, agents: parallelDemoAgents },
   [parallelHitlWorkflow.id]: { workflow: parallelHitlWorkflow, agents: parallelDemoAgents },
   "parallel-hitl": { workflow: parallelHitlWorkflow, agents: parallelDemoAgents },
+  [verticalDemoWorkflow.id]: { workflow: verticalDemoWorkflow, agents: verticalDemoAgents },
+  vertical: { workflow: verticalDemoWorkflow, agents: verticalDemoAgents },
 };
 
 export function resolveWorkflow(id: string): RegisteredWorkflow {
