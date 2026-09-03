@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { appendAudit } from "./audit.js";
+import { auditBundleToJsonl, buildAuditBundle } from "./export.js";
 import { listRuns, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
@@ -281,9 +282,11 @@ Usage:
   npm run start:orchestrator -- --list
   npm run start:orchestrator -- --approve <runId>
   npm run start:orchestrator -- --reject <runId>
+  npm run start:orchestrator -- --export-audit <runId>
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
+--export-audit prints aether-audit-v1 JSONL (header + events) to stdout.
 `);
 }
 
@@ -301,6 +304,14 @@ async function main() {
       return;
     }
     console.log(ids.length ? ids.join("\n") : "(no runs yet)");
+    return;
+  }
+  const exportIdx = argv.indexOf("--export-audit");
+  if (exportIdx >= 0) {
+    const id = argv[exportIdx + 1];
+    if (!id) throw new Error("--export-audit requires a run id");
+    const run = await loadRun(id);
+    process.stdout.write(auditBundleToJsonl(buildAuditBundle(run)));
     return;
   }
   const approveIdx = argv.indexOf("--approve");

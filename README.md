@@ -20,6 +20,7 @@ AETHER_LLM_DRY_RUN=1 npm run start:orchestrator -- --workflow llm
 npm run start:orchestrator -- --workflow parallel
 npm run start:orchestrator -- --list
 npm run start:orchestrator -- --json --workflow hello
+npm run start:orchestrator -- --export-audit <runId>
 ```
 
 `--json` prints one `RunSummary` object to stdout (human logs on stderr). Schema lives in `src/summary.ts`. `demo.sh` uses that path so it does not scrape console prose.
@@ -67,6 +68,7 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/` – core orchestrator, types, agents, tools
 - `src/summary.ts` – `RunSummary` Zod contract + stdout parse helper
 - `src/audit.ts` – append-only audit + secret redaction
+- `src/export.ts` – `aether-audit-v1` JSON/JSONL bundle (memory values omitted)
 - `src/api.ts` – loopback control API (runs + HITL + optional token)
 - `src/auth.ts` – API token check
 - `src/tools/http.ts` – real HTTP connector

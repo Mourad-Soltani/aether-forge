@@ -152,6 +152,17 @@ PAR_ID="$(expect_status "$PAR_JSON" completed)"
 echo "    run: $PAR_ID"
 
 echo
+echo "==> export audit JSONL for parallel run"
+EXPORT_OUT="$(npx tsx src/orchestrator.ts --export-audit "$PAR_ID")"
+node -e '
+  const lines = process.argv[1].trim().split(/\n/);
+  const header = JSON.parse(lines[0]);
+  if (header.format !== "aether-audit-v1") process.exit(1);
+  if (header.eventCount !== lines.length - 1) process.exit(1);
+  console.log("    events:", header.eventCount);
+' "$EXPORT_OUT"
+
+echo
 echo "==> recent runs"
 run_orch --list 2>/dev/null || true
 

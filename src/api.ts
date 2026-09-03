@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { configuredApiToken, isAuthorized } from "./auth.js";
+import { buildAuditBundle } from "./export.js";
 import { executeWorkflow, resumeRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -83,6 +84,17 @@ export async function handleRequest(
 
     if (method === "GET" && pathname === "/runs") {
       json(res, 200, { runs: await listRunSummaries() });
+      return;
+    }
+
+    const auditMatch = pathname.match(/^\/runs\/([^/]+)\/audit$/);
+    if (method === "GET" && auditMatch) {
+      try {
+        const run = await loadRun(auditMatch[1]);
+        json(res, 200, { bundle: buildAuditBundle(run) });
+      } catch {
+        notFound(res);
+      }
       return;
     }
 

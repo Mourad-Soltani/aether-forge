@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { decideRun, fetchRun, type Run } from "../../../lib/api";
+import { decideRun, fetchAuditBundle, fetchRun, type Run } from "../../../lib/api";
 import { useIntervalRefresh } from "../../../lib/useIntervalRefresh";
 
 export default function RunPage({ params }: { params: { id: string } }) {
@@ -73,6 +73,34 @@ export default function RunPage({ params }: { params: { id: string } }) {
           </button>
         </div>
       ) : null}
+      <p>
+        <button
+          disabled={busy}
+          onClick={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                const data = await fetchAuditBundle(params.id);
+                const blob = new Blob([JSON.stringify(data.bundle, null, 2)], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `aether-audit-${params.id}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : String(err));
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+        >
+          Export audit
+        </button>
+      </p>
       <h2>Audit trail</h2>
       {run.audit.map((ev) => (
         <div className="event" key={ev.id}>

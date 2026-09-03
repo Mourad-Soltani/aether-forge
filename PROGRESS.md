@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 13 — 2026-09-03)
+## Current Status (Session 14 — 2026-09-03)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -31,6 +31,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Session 11 — sandboxed `workspace_read` / `workspace_write` (`data/workspace` or `AETHER_WORKSPACE_ROOT`). `workspace_write` is irreversible. `wf.files` HITL. `AETHER_WORKSPACE_DRY_RUN`. Tests in `tests/workspace.test.ts`. `demo.sh` includes files dry-run pause → approve.
 - [x] Session 12 — env-gated `llm_complete` (OpenAI-compatible). `AETHER_LLM_DRY_RUN` simulates without a provider call. `wf.llm` autoApprove demo. `demo.sh` includes llm dry-run. Tests in `tests/llm.test.ts`.
 - [x] Session 13 — parallel waves (`mode: "parallel"` consecutive steps via `Promise.all`). HITL checked before the wave starts. `wf.parallel` + `wf.parallel.hitl`. Tests in `tests/parallel.test.ts`. `demo.sh` includes `wf.parallel`.
+- [x] Session 14 — audit export: `src/export.ts` `aether-audit-v1` bundle, CLI `--export-audit`, `GET /runs/:id/audit`, dashboard download. Memory values omitted; events already redacted. Tests in `tests/export.test.ts`. `demo.sh` checks JSONL header.
 - [ ] First vertical demo with GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Real (non-dry-run) workspace write against local `data/workspace` is available without secrets; optional operator proof
@@ -41,7 +42,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 2. Optional live Slack path when operator sets `SLACK_WEBHOOK_URL` locally (do not commit the URL). Dry-run is the default proof path.
 3. Optional real workspace write: unset `AETHER_WORKSPACE_DRY_RUN` and run `wf.files` so `data/workspace/briefs/demo.md` is written after approve.
 4. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
-5. Optional: live `wf.llm` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred.
+5. Optional: live `wf.llm` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. Step timeouts still deferred.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -72,9 +73,10 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Session 11: workspace files are sandboxed. `workspace_write` is irreversible. `AETHER_WORKSPACE_DRY_RUN` skips disk I/O. Paths cannot escape the root.
 - Session 12: `llm_complete` is reversible. `AETHER_LLM_DRY_RUN` skips the provider call. Keys from `AETHER_LLM_API_KEY` / `XAI_API_KEY` / `OPENAI_API_KEY` at execute time. Default base is xAI when `XAI_API_KEY` is set.
 - Session 13: consecutive `mode: "parallel"` steps run as one wave. HITL applies to the wave before any sibling executes. Distinct `writeTo` keys inside a wave.
+- Session 14: audit export is `aether-audit-v1`. Bundle includes metadata + events, not raw memory values. CLI `--export-audit` writes JSONL to stdout. API `GET /runs/:id/audit` returns JSON bundle. Dashboard downloads JSON.
 
 ## Handoff for next session
-Session 13 ships parallel waves + `wf.parallel` / `wf.parallel.hitl` and extends `npm run demo` with a secret-free parallel run. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 14 ships audit export (CLI JSONL, API bundle, dashboard download). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 
 ```bash
 npm install
@@ -109,6 +111,7 @@ API:
 - `GET /workflows` (gated)
 - `GET /runs`
 - `GET /runs/:id`
+- `GET /runs/:id/audit` (`aether-audit-v1` bundle)
 - `POST /runs` `{ "workflowId": "wf.hitl" | "wf.github" | "wf.slack" | "wf.files" | "wf.parallel" | ... }`
 - `POST /runs/:id/approve`
 - `POST /runs/:id/reject`

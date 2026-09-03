@@ -60,7 +60,7 @@ Run ids must match `[a-zA-Z0-9._-]` before any path join.
 ## Control API (Session 3–4)
 `src/api.ts` — Node `http` server, no extra runtime dependency.
 Default bind: `127.0.0.1:8787`.
-Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`.
+Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `/runs/:id/audit`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`.
 CORS origin default `http://localhost:3000`.
 Auth (Session 4): optional `AETHER_API_TOKEN`. When set, require `X-Aether-Token` or `Authorization: Bearer`. `/health` and `OPTIONS` stay open. Compare uses timing-safe equality.
 
@@ -151,3 +151,11 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - A wave does not start until every irreversible step in it is approved (or `autoApprove`).
 - Memory writes apply after the wave settles. Parallel siblings must use distinct `writeTo` keys.
 - `wf.parallel` is autoApprove. `wf.parallel.hitl` pauses before the wave.
+
+
+## Decisions (Session 14)
+- External audit evidence uses format `aether-audit-v1`.
+- Export includes run metadata + audit events. Raw memory values are omitted (keys only).
+- Events are already redacted by `appendAudit`; export does not re-hydrate secrets.
+- CLI `--export-audit <runId>` emits JSONL (header line + one event per line) on stdout.
+- API `GET /runs/:id/audit` returns `{ bundle }` JSON. Dashboard downloads the JSON file.

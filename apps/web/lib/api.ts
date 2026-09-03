@@ -90,6 +90,12 @@ export function fetchRun(id: string) {
   return request<{ run: Run }>(`/runs/${id}`);
 }
 
+export function fetchAuditBundle(id: string) {
+  return request<{ bundle: { format: string; exportedAt: string; run: unknown; events: AuditEvent[] } }>(
+    `/runs/${id}/audit`,
+  );
+}
+
 export function startRun(workflowId: string) {
   return request<{ run: Run }>("/runs", {
     method: "POST",
