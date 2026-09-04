@@ -43,7 +43,7 @@ export const llmComplete: Tool = {
   description:
     "Call an OpenAI-compatible chat model. Requires an API key unless AETHER_LLM_DRY_RUN=1.",
   parameters: LlmArgs,
-  async execute(args) {
+  async execute(args, ctx) {
     const parsed = LlmArgs.parse(args);
     const cfg = resolveLlmConfig(parsed.model);
     if (isLlmDryRun()) {
@@ -68,6 +68,7 @@ export const llmComplete: Tool = {
         authorization: `Bearer ${cfg.apiKey}`,
         "content-type": "application/json",
       },
+      signal: ctx.signal,
       body: JSON.stringify({
         model: cfg.model,
         messages,

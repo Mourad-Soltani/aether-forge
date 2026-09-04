@@ -40,6 +40,8 @@ export interface ToolContext {
   stepId: string;
   memory: Record<string, unknown>;
   audit: (type: AuditEvent["type"], content: unknown) => void;
+  /** Aborted when the step timeout elapses. Tools should honor this. */
+  signal?: AbortSignal;
 }
 
 export interface Tool {
@@ -66,7 +68,7 @@ export interface Step {
   /** Write tool result into run memory under this key. */
   writeTo?: string;
   mode?: "sequential" | "parallel";
-  /** Orchestrator-level cap for this step's execute(). Does not abort the underlying I/O. */
+  /** Orchestrator-level cap for this step's execute(). AbortSignal is passed to the tool. */
   timeoutMs?: number;
   /** Transient-failure retries. Not allowed on irreversible tools. */
   retry?: { maxAttempts: number; backoffMs?: number };

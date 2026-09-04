@@ -120,10 +120,25 @@ export const sleepStub: Tool = {
     ms: z.number().int().nonnegative().max(30_000),
     label: z.string().optional(),
   }),
-  async execute(args) {
+  async execute(args, ctx) {
     const ms = Number(args.ms);
     const label = args.label ? String(args.label) : "sleep";
-    await new Promise((r) => setTimeout(r, ms));
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        ctx.signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, ms);
+      const onAbort = () => {
+        clearTimeout(timer);
+        reject(new Error("sleep_stub aborted"));
+      };
+      if (ctx.signal?.aborted) {
+        clearTimeout(timer);
+        reject(new Error("sleep_stub aborted"));
+        return;
+      }
+      ctx.signal?.addEventListener("abort", onAbort, { once: true });
+    });
     return { sleptMs: ms, label };
   },
 };

@@ -183,3 +183,10 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Each failed attempt writes an `error` audit event; a `decision` `{ kind: "retry" }` is written before the next attempt.
 - Timeouts apply per attempt. `fail_n_stub` exists only to prove retries. `wf.retry.ok` is in `demo.sh`.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Session 18 — AbortSignal on step timeout
+- `runWithTimeout` aborts an `AbortSignal` when `timeoutMs` elapses.
+- The signal is passed as `ToolContext.signal`.
+- `http_request`, `llm_complete`, and `sleep_stub` honor the signal.
+- Timeouts still mark the run `failed`. In-flight tools that ignore the signal may continue in the background.

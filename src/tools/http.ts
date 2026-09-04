@@ -22,12 +22,15 @@ export const httpRequest: Tool = {
   name: "http_request",
   description: "Perform an HTTP request (http/https only) and return status + JSON/text body.",
   parameters: HttpArgs,
-  async execute(args) {
+  async execute(args, ctx) {
     const parsed = HttpArgs.parse(args);
     const url = assertSafeUrl(parsed.url);
     const timeoutMs = parsed.timeoutMs ?? 10_000;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const onStepAbort = () => controller.abort();
+    ctx.signal?.addEventListener("abort", onStepAbort);
+    if (ctx.signal?.aborted) controller.abort();
     try {
       const init: RequestInit = {
         method: parsed.method,
@@ -64,6 +67,7 @@ export const httpRequest: Tool = {
       };
     } finally {
       clearTimeout(timer);
+      ctx.signal?.removeEventListener("abort", onStepAbort);
     }
   },
 };

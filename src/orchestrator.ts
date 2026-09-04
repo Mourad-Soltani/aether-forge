@@ -5,7 +5,7 @@ import { listRuns, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
 import { resolveStepRetry, sleep } from "./retry.js";
-import { resolveStepTimeoutMs, withTimeout } from "./timeout.js";
+import { resolveStepTimeoutMs, runWithTimeout } from "./timeout.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
 export type { RunSummary };
@@ -210,23 +210,25 @@ async function executeWave(
         content: { tool: tool.name, args: data },
       });
 
-      const ctx: ToolContext = {
-        runId: run.id,
-        agentId: agent.id,
-        stepId: step.id,
-        memory: run.memory,
-        audit: (type, content) =>
-          appendAudit(run, { type, agentId: agent.id, stepId: step.id, content }),
-      };
-
       const timeoutMs = resolveStepTimeoutMs(step.timeoutMs);
       const retry = resolveStepRetry(step.retry);
       let result: unknown;
       let lastErr: unknown;
       for (let attempt = 1; attempt <= retry.maxAttempts; attempt++) {
         try {
-          result = await withTimeout(
-            tool.execute(data, ctx),
+          result = await runWithTimeout(
+            (signal) => {
+              const ctx: ToolContext = {
+                runId: run.id,
+                agentId: agent.id,
+                stepId: step.id,
+                memory: run.memory,
+                signal,
+                audit: (type, content) =>
+                  appendAudit(run, { type, agentId: agent.id, stepId: step.id, content }),
+              };
+              return tool.execute(data, ctx);
+            },
             timeoutMs,
             step.id,
           );

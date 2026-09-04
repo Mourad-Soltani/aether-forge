@@ -42,3 +42,25 @@ test("wf.timeout.fail marks the run failed", async () => {
   const errEvent = run.audit.find((e) => e.type === "error");
   assert.ok(errEvent);
 });
+
+test("runWithTimeout aborts the signal when the cap elapses", async () => {
+  const { runWithTimeout } = await import("../src/timeout.js");
+  let aborted = false;
+  const started = Date.now();
+  await assert.rejects(
+    runWithTimeout(
+      async (signal) => {
+        signal.addEventListener("abort", () => {
+          aborted = true;
+        });
+        await new Promise((r) => setTimeout(r, 400));
+        return "late";
+      },
+      30,
+      "step.abort",
+    ),
+    /timed out after 30ms: step.abort/,
+  );
+  assert.equal(aborted, true);
+  assert.ok(Date.now() - started < 300);
+});
