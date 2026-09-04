@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Aether Forge — secret-free local demo
-# Walks wf.hello → wf.http → wf.hitl → wf.github/slack/files dry-run → wf.llm dry-run → wf.parallel → wf.vertical dry-run → wf.timeout.ok.
+# Walks wf.hello → wf.http → wf.hitl → wf.github/slack/files dry-run → wf.llm dry-run → wf.parallel → wf.vertical dry-run → wf.timeout.ok → wf.retry.ok.
 # Does not require GITHUB_TOKEN or SLACK_WEBHOOK_URL.
 set -euo pipefail
 
@@ -170,11 +170,18 @@ unset AETHER_WORKSPACE_DRY_RUN || true
 
 
 echo
-echo "==> 10/10 wf.timeout.ok (sleep under step timeoutMs cap)"
+echo "==> 10/11 wf.timeout.ok (sleep under step timeoutMs cap)"
 TO_RAW="$(run_orch --workflow timeout-ok 2> >(tee /dev/stderr >&2))"
 TO_JSON="$(printf '%s\n' "$TO_RAW" | parse_summary)"
 TO_ID="$(expect_status "$TO_JSON" completed)"
 echo "    run: $TO_ID"
+
+echo
+echo "==> 11/11 wf.retry.ok (transient fail_n_stub then success)"
+RT_RAW="$(run_orch --workflow retry-ok 2> >(tee /dev/stderr >&2))"
+RT_JSON="$(printf '%s\n' "$RT_RAW" | parse_summary)"
+RT_ID="$(expect_status "$RT_JSON" completed)"
+echo "    run: $RT_ID"
 
 echo
 echo "==> export audit JSONL for parallel run"
@@ -203,6 +210,7 @@ echo "  llm:     $LLM_ID (dry-run complete)"
 echo "  parallel: $PAR_ID"
 echo "  vertical: $VERT_ID (dry-run pause then approve)"
 echo "  timeout:  $TO_ID"
+echo "  retry:    $RT_ID"
 echo
 echo "Live GitHub issue create is still operator-only:"
 echo "  # rotate any token that appeared in chat; do not paste tokens here"

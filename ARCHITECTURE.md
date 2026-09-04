@@ -86,6 +86,7 @@ Live `wf.github` and Slack remain operator-env only.
 - Real (env-gated): `slack_notify` (irreversible; `SLACK_WEBHOOK_URL` or `args.webhookUrl`; `AETHER_SLACK_DRY_RUN=1` simulates without HTTP)
 - Real (sandboxed): `workspace_read`, `workspace_write` (irreversible write; root `data/workspace` or `AETHER_WORKSPACE_ROOT`; `AETHER_WORKSPACE_DRY_RUN=1` skips disk I/O)
 - Demo: `wf.parallel` / `wf.parallel.hitl` — consecutive parallel steps (Session 13)
+- Demo: `wf.retry.ok` / `wf.retry.fail` — transient retries (Session 17)
 
 ## MVP Scope (first 4–6 weeks of daily sessions)
 1. Core types: Agent, Tool, Workflow, Step, AuditEvent, Run — **done v0.1**
@@ -172,4 +173,13 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Timeout does not abort in-flight I/O (no AbortSignal on tools yet). The run is marked `failed`.
 - Cap is clamped to 120s. Invalid or non-positive `timeoutMs` is rejected at resolve time.
 - `sleep_stub` exists only to prove the cap. `wf.timeout.ok` is in `demo.sh`. `wf.timeout.fail` is test-only.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Decisions (Session 17)
+- Steps may set `retry: { maxAttempts, backoffMs }`. Linear backoff only.
+- `maxAttempts` is clamped to 5. `backoffMs` is clamped to 5s. Default is one attempt (no retry).
+- Retry is rejected on irreversible tools so a transient failure cannot double-apply a side effect.
+- Each failed attempt writes an `error` audit event; a `decision` `{ kind: "retry" }` is written before the next attempt.
+- Timeouts apply per attempt. `fail_n_stub` exists only to prove retries. `wf.retry.ok` is in `demo.sh`.
 - Chat-pasted PATs remain unusable for live `wf.github`.

@@ -68,6 +68,8 @@ export interface Step {
   mode?: "sequential" | "parallel";
   /** Orchestrator-level cap for this step's execute(). Does not abort the underlying I/O. */
   timeoutMs?: number;
+  /** Transient-failure retries. Not allowed on irreversible tools. */
+  retry?: { maxAttempts: number; backoffMs?: number };
 }
 
 export interface Workflow {

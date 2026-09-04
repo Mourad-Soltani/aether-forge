@@ -4,6 +4,7 @@ import { auditBundleToJsonl, buildAuditBundle } from "./export.js";
 import { listRuns, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
+import { resolveStepRetry, sleep } from "./retry.js";
 import { resolveStepTimeoutMs, withTimeout } from "./timeout.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
@@ -160,6 +161,10 @@ async function executeWave(
       throw new Error(`Invalid args for ${tool.name}: ${parsed.error.message}`);
     }
 
+    if (step.retry && tool.irreversible) {
+      throw new Error(`Retry is not allowed on irreversible tool ${tool.name} (step ${step.id})`);
+    }
+
     const alreadyApproved = run.approvedStepIds?.includes(step.id);
     if (tool.irreversible && !workflow.autoApprove && !alreadyApproved) {
       run.status = "awaiting_approval";
@@ -215,11 +220,49 @@ async function executeWave(
       };
 
       const timeoutMs = resolveStepTimeoutMs(step.timeoutMs);
-      const result = await withTimeout(
-        tool.execute(data, ctx),
-        timeoutMs,
-        step.id,
-      );
+      const retry = resolveStepRetry(step.retry);
+      let result: unknown;
+      let lastErr: unknown;
+      for (let attempt = 1; attempt <= retry.maxAttempts; attempt++) {
+        try {
+          result = await withTimeout(
+            tool.execute(data, ctx),
+            timeoutMs,
+            step.id,
+          );
+          lastErr = undefined;
+          break;
+        } catch (err) {
+          lastErr = err;
+          const message = err instanceof Error ? err.message : String(err);
+          appendAudit(run, {
+            type: "error",
+            agentId: agent.id,
+            stepId: step.id,
+            content: {
+              tool: tool.name,
+              attempt,
+              maxAttempts: retry.maxAttempts,
+              message,
+            },
+          });
+          if (attempt >= retry.maxAttempts) throw err;
+          appendAudit(run, {
+            type: "decision",
+            agentId: agent.id,
+            stepId: step.id,
+            content: {
+              kind: "retry",
+              tool: tool.name,
+              attempt,
+              nextAttempt: attempt + 1,
+              backoffMs: retry.backoffMs,
+            },
+          });
+          await sleep(retry.backoffMs);
+        }
+      }
+      if (lastErr) throw lastErr;
 
       appendAudit(run, {
         type: "tool_result",

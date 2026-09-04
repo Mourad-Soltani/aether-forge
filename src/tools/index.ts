@@ -90,6 +90,29 @@ export const notifyStub: Tool = {
 };
 
 
+
+const failNCounts = new Map<string, number>();
+
+/** Test helper. Throws on the first `failTimes` calls for a given label, then succeeds. */
+export const failNStub: Tool = {
+  name: "fail_n_stub",
+  description: "Test helper. Fails the first failTimes executions for label, then returns ok.",
+  parameters: z.object({
+    failTimes: z.number().int().nonnegative().max(10),
+    label: z.string().min(1).max(64),
+  }),
+  async execute(args) {
+    const label = String(args.label);
+    const failTimes = Number(args.failTimes);
+    const seen = failNCounts.get(label) ?? 0;
+    failNCounts.set(label, seen + 1);
+    if (seen < failTimes) {
+      throw new Error(`fail_n_stub ${label} attempt ${seen + 1}`);
+    }
+    return { ok: true, attempts: seen + 1, label };
+  },
+};
+
 export const sleepStub: Tool = {
   name: "sleep_stub",
   description: "Test helper. Resolves after ms milliseconds. Used to prove step timeouts.",
@@ -117,6 +140,7 @@ export const builtinTools: Tool[] = [
   workspaceWrite,
   llmComplete,
   sleepStub,
+  failNStub,
 ];
 
 export function toolsByName(tools: Tool[]): Map<string, Tool> {
