@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 19 — 2026-09-05)
+## Current Status (Session 20 — 2026-09-06)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -37,6 +37,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Session 17 — step `retry` (`maxAttempts` + linear `backoffMs`, `src/retry.ts`). `fail_n_stub`. `wf.retry.ok` / `wf.retry.fail`. Irreversible tools cannot set retry. Tests in `tests/retry.test.ts`. `demo.sh` includes retry-ok.
 - [x] Session 18 — step timeout now aborts `ToolContext.signal` (`runWithTimeout`). `http_request`, `llm_complete`, and `sleep_stub` cancel in-flight work. Tests in `tests/timeout.test.ts`.
 - [x] Session 19 — remaining connectors honor `ctx.signal`: GitHub, Slack, workspace read/write. LLM merges step abort + 20s provider timeout (`src/abort.ts`). Tests in `tests/abort.test.ts` + tool suites.
+- [x] Session 20 — operator `cancel` on paused runs: status `cancelled`, CLI `--cancel`, `POST /runs/:id/cancel`, dashboard button. Tests in `tests/cancel.test.ts`. `demo.sh` step 12.
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Real (non-dry-run) workspace write against local `data/workspace` is available without secrets; optional operator proof
@@ -84,9 +85,10 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Session 17: step `retry.maxAttempts` (1–5) with linear `backoffMs` (cap 5s). Retry is forbidden on irreversible tools. `fail_n_stub` is a test/demo helper. `wf.retry.ok` is in `demo.sh`. `wf.retry.fail` is test-only.
 - Session 18: step timeout aborts `ToolContext.signal` via `runWithTimeout`. HTTP, LLM, and `sleep_stub` honor it. Other tools may still finish in the background.
 - Session 19: GitHub, Slack, and workspace tools honor `ctx.signal`. LLM no longer drops the step signal behind `AbortSignal.timeout`.
+- Session 20: paused runs can be cancelled (`cancelled` status). Distinct from reject/`failed`. CLI `--cancel`, API + dashboard.
 
 ## Handoff for next session
-Session 19 ships AbortSignal on GitHub/Slack/workspace plus the LLM merge-signal fix. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 20 ships operator cancel (`cancelled` ≠ `failed`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 
 ```bash
 npm install
@@ -129,6 +131,7 @@ API:
 - `POST /runs` `{ "workflowId": "wf.hitl" | "wf.github" | "wf.slack" | "wf.files" | "wf.parallel" | "wf.vertical" | ... }`
 - `POST /runs/:id/approve`
 - `POST /runs/:id/reject`
+- `POST /runs/:id/cancel`
 
 Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`.
 
@@ -148,4 +151,11 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Connector HTTP calls take `ctx.signal` on `fetch`.
 - Workspace I/O is refused when the signal is already aborted (no partial write).
 - `mergeAbortSignals` combines step abort with tool-local timeouts (`AbortSignal.any` when available).
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Decisions (Session 20)
+- Cancel is only valid on `awaiting_approval`. Completed / failed / cancelled refuse with the same expected-status error as resume.
+- Cancel writes `cancelled`, not `failed`. Reject remains the failure path.
+- `summarizeRun.ok` is true for cancelled.
+- In-flight cancel of a currently executing tool is still deferred (process is single-shot per CLI invoke).
 - Chat-pasted PATs remain unusable for live `wf.github`.

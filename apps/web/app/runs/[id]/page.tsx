@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { decideRun, fetchAuditBundle, fetchRun, type Run } from "../../../lib/api";
+import { cancelRun, decideRun, fetchAuditBundle, fetchRun, type Run } from "../../../lib/api";
 import { useIntervalRefresh } from "../../../lib/useIntervalRefresh";
 
 export default function RunPage({ params }: { params: { id: string } }) {
@@ -24,7 +24,11 @@ export default function RunPage({ params }: { params: { id: string } }) {
     void load();
   }, [params.id]);
 
-  useIntervalRefresh(load, live && !!run && run.status !== "completed" && run.status !== "failed", 5000);
+  useIntervalRefresh(
+    load,
+    live && !!run && run.status !== "completed" && run.status !== "failed" && run.status !== "cancelled",
+    5000,
+  );
 
   async function onDecide(decision: "approve" | "reject") {
     setBusy(true);
@@ -70,6 +74,24 @@ export default function RunPage({ params }: { params: { id: string } }) {
           </button>
           <button className="bad" disabled={busy} onClick={() => void onDecide("reject")}>
             Reject
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  const data = await cancelRun(params.id);
+                  setRun(data.run);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : String(err));
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+          >
+            Cancel
           </button>
         </div>
       ) : null}

@@ -27,7 +27,8 @@ export type RunStatus =
   | "running"
   | "awaiting_approval"
   | "completed"
-  | "failed";
+  | "failed"
+  | "cancelled";
 
 export interface RunSummary {
   id: string;
@@ -105,6 +106,10 @@ export function startRun(workflowId: string) {
 
 export function decideRun(id: string, decision: "approve" | "reject") {
   return request<{ run: Run }>(`/runs/${id}/${decision}`, { method: "POST" });
+}
+
+export function cancelRun(id: string) {
+  return request<{ run: Run }>(`/runs/${id}/cancel`, { method: "POST" });
 }
 
 export function fetchWorkflows() {

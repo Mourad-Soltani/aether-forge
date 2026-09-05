@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { configuredApiToken, isAuthorized } from "./auth.js";
 import { buildAuditBundle } from "./export.js";
-import { executeWorkflow, resumeRun } from "./orchestrator.js";
+import { cancelRun, executeWorkflow, resumeRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
 
@@ -115,6 +115,13 @@ export async function handleRequest(
       const { workflow, agents } = resolveWorkflow(workflowId);
       const run = await executeWorkflow(workflow, agents);
       json(res, 201, { run });
+      return;
+    }
+
+    const cancelMatch = pathname.match(/^\/runs\/([^/]+)\/cancel$/);
+    if (method === "POST" && cancelMatch) {
+      const run = await cancelRun(cancelMatch[1]);
+      json(res, 200, { run });
       return;
     }
 

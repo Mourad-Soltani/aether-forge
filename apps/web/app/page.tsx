@@ -20,6 +20,7 @@ const STATUSES: Array<RunStatus | "all"> = [
   "pending",
   "completed",
   "failed",
+  "cancelled",
 ];
 
 function badge(status: string) {

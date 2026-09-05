@@ -43,8 +43,9 @@ Tools receive a `ToolContext` with `runId`, `agentId`, `memory`, and `audit`.
 4. Mark run `completed` or `failed`.
 5. Persist run to `data/runs/<runId>.json`.
 
-Resume (`--approve` / `--reject` or `POST /runs/:id/approve|reject`):
+Resume (`--approve` / `--reject` / `--cancel` or `POST /runs/:id/approve|reject|cancel`):
 - reject → `decision` audit + `failed`
+- cancel → `decision` audit + `cancelled` (operator abort; not a tool failure)
 - approve → append step to `approvedStepIds`, continue from `pausedStepId`
 
 Parallel steps: consecutive `mode: "parallel"` steps form a wave executed with `Promise.all`. HITL is checked for the whole wave before any tool in the wave runs. Distinct `writeTo` keys required inside a wave.
@@ -60,7 +61,7 @@ Run ids must match `[a-zA-Z0-9._-]` before any path join.
 ## Control API (Session 3–4)
 `src/api.ts` — Node `http` server, no extra runtime dependency.
 Default bind: `127.0.0.1:8787`.
-Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `/runs/:id/audit`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`.
+Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `/runs/:id/audit`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`, `POST /runs/:id/cancel`.
 CORS origin default `http://localhost:3000`.
 Auth (Session 4): optional `AETHER_API_TOKEN`. When set, require `X-Aether-Token` or `Authorization: Bearer`. `/health` and `OPTIONS` stay open. Compare uses timing-safe equality.
 
@@ -195,3 +196,10 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - `github_create_issue`, `slack_notify`, `workspace_read`, and `workspace_write` throw if `ctx.signal` is already aborted and pass the signal to `fetch` where they perform HTTP.
 - `llm_complete` merges `ctx.signal` with a 20s provider timeout via `mergeAbortSignals` in `src/abort.ts`. The previous duplicate `signal` key had dropped the step abort.
 - Dry-run paths still check abort first so cancelled steps do not emit a fake success.
+
+## Session 20 — Operator cancel
+- New terminal status `cancelled` (not `failed`).
+- `cancelRun` only accepts `awaiting_approval`. Writes `decision: cancel` + `run_end`.
+- CLI `--cancel`, API `POST /runs/:id/cancel`, dashboard Cancel on paused runs.
+- `RunSummary.ok` stays true for cancelled (operator intent, not engine failure).
+- Live GitHub still blocked on a rotated token supplied outside chat.

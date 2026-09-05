@@ -32,7 +32,8 @@ export type RunStatus =
   | "running"
   | "awaiting_approval"
   | "completed"
-  | "failed";
+  | "failed"
+  | "cancelled";
 
 export interface ToolContext {
   runId: string;

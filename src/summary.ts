@@ -9,6 +9,7 @@ export const RunSummarySchema = z.object({
     "awaiting_approval",
     "completed",
     "failed",
+    "cancelled",
   ]),
   id: z.string().min(1),
   workflowId: z.string().min(1),

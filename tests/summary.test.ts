@@ -55,6 +55,14 @@ test("summarizeRun: failed is not ok and keeps error", () => {
   assert.equal(summary.persisted, "/tmp/run-abc.json");
 });
 
+test("summarizeRun: cancelled is ok (operator abort is not failure)", () => {
+  const summary = summarizeRun(
+    run({ status: "cancelled", error: "Cancelled at step create-ticket" }),
+  );
+  assert.equal(summary.ok, true);
+  assert.equal(summary.status, "cancelled");
+});
+
 test("summarizeRun: awaiting_approval is ok (pause is not failure)", () => {
   const summary = summarizeRun(
     run({ status: "awaiting_approval", pausedStepId: "create-ticket" }),

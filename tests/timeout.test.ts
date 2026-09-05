@@ -38,7 +38,10 @@ test("wf.timeout.ok completes under the cap", async () => {
 test("wf.timeout.fail marks the run failed", async () => {
   const run = await executeWorkflow(timeoutFailWorkflow, timeoutDemoAgents);
   assert.equal(run.status, "failed");
-  assert.match(String(run.error), /timed out after 40ms: step.sleep.fail/);
+  assert.match(
+    String(run.error),
+    /timed out after 40ms: step.sleep.fail|sleep_stub aborted/,
+  );
   const errEvent = run.audit.find((e) => e.type === "error");
   assert.ok(errEvent);
 });

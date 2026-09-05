@@ -9,7 +9,7 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 ```bash
 npm install
 npm test                     # node:test — RunSummary, persist, audit, connectors
-npm run demo                 # hello → http → hitl → github/slack/files/llm dry-run → parallel → vertical → timeout-ok → retry-ok
+npm run demo                 # … → timeout-ok → retry-ok → hitl cancel
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
@@ -28,11 +28,12 @@ npm run start:orchestrator -- --export-audit <runId>
 
 `--json` prints one `RunSummary` object to stdout (human logs on stderr). Schema lives in `src/summary.ts`. `demo.sh` uses that path so it does not scrape console prose.
 
-Approve or reject a paused run:
+Approve, reject, or cancel a paused run:
 
 ```bash
 npm run start:orchestrator -- --approve <runId>
 npm run start:orchestrator -- --reject <runId>
+npm run start:orchestrator -- --cancel <runId>
 ```
 
 Dashboard (two terminals):
@@ -79,7 +80,7 @@ NEXT_PUBLIC_AETHER_API_TOKEN=
 - `src/tools/slack.ts` – Slack incoming webhook (env webhook or dry-run; HITL)
 - `src/tools/workspace.ts` – sandboxed file read/write (`data/workspace`)
 - `src/tools/llm.ts` – OpenAI-compatible chat completion (env key or dry-run)
-- `apps/web` – Next.js dashboard (runs, audit, approve/reject, filters, live refresh)
+- `apps/web` – Next.js dashboard (runs, audit, approve/reject/cancel, filters, live refresh)
 - `demo.sh` – secret-free walkthrough including github/slack/files/llm dry-run
 - `tests/` – node:test unit tests
 - `packages/` – shared packages

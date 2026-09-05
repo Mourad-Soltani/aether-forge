@@ -325,6 +325,30 @@ export async function resumeRun(
   return executeWorkflow(workflow, agents, run);
 }
 
+/** Operator abort of a paused run. Distinct from reject (failed). Terminal, no tool execute. */
+export async function cancelRun(runId: string): Promise<Run> {
+  const run = await loadRun(runId);
+  if (run.status !== "awaiting_approval") {
+    throw new Error(
+      `Run ${runId} is ${run.status}, expected awaiting_approval`,
+    );
+  }
+  run.status = "cancelled";
+  run.finishedAt = new Date().toISOString();
+  run.error = `Cancelled at step ${run.pausedStepId}`;
+  appendAudit(run, {
+    type: "decision",
+    stepId: run.pausedStepId,
+    content: { decision: "cancel", stepId: run.pausedStepId },
+  });
+  appendAudit(run, { type: "run_end", content: { status: run.status } });
+  const file = await saveRun(run);
+  emitSummary(run, file);
+  humanLog(`Run cancelled: ${run.id}`);
+  humanLog(`Persisted: ${file}`);
+  return run;
+}
+
 function printUsage(): void {
   console.log(`Aether Forge orchestrator
 
@@ -333,6 +357,7 @@ Usage:
   npm run start:orchestrator -- --list
   npm run start:orchestrator -- --approve <runId>
   npm run start:orchestrator -- --reject <runId>
+  npm run start:orchestrator -- --cancel <runId>
   npm run start:orchestrator -- --export-audit <runId>
   npm run start:orchestrator -- --json --workflow hello
 
@@ -379,6 +404,13 @@ async function main() {
     const id = argv[rejectIdx + 1];
     if (!id) throw new Error("--reject requires a run id");
     await resumeRun(id, "reject");
+    return;
+  }
+  const cancelIdx = argv.indexOf("--cancel");
+  if (cancelIdx >= 0) {
+    const id = argv[cancelIdx + 1];
+    if (!id) throw new Error("--cancel requires a run id");
+    await cancelRun(id);
     return;
   }
   const wfIdx = argv.indexOf("--workflow");
