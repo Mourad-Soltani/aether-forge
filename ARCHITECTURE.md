@@ -190,3 +190,8 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - The signal is passed as `ToolContext.signal`.
 - `http_request`, `llm_complete`, and `sleep_stub` honor the signal.
 - Timeouts still mark the run `failed`. In-flight tools that ignore the signal may continue in the background.
+
+## Session 19 — Remaining tools honor AbortSignal
+- `github_create_issue`, `slack_notify`, `workspace_read`, and `workspace_write` throw if `ctx.signal` is already aborted and pass the signal to `fetch` where they perform HTTP.
+- `llm_complete` merges `ctx.signal` with a 20s provider timeout via `mergeAbortSignals` in `src/abort.ts`. The previous duplicate `signal` key had dropped the step abort.
+- Dry-run paths still check abort first so cancelled steps do not emit a fake success.

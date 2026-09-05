@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { throwIfAborted } from "../abort.js";
 import type { Tool } from "../types.js";
 
 const SlackArgs = z.object({
@@ -23,8 +24,9 @@ export const slackNotify: Tool = {
     "Post text to a Slack incoming webhook. Requires SLACK_WEBHOOK_URL unless AETHER_SLACK_DRY_RUN=1. Irreversible.",
   parameters: SlackArgs,
   irreversible: true,
-  async execute(args) {
+  async execute(args, ctx) {
     const parsed = SlackArgs.parse(args);
+    throwIfAborted(ctx.signal, "slack_notify");
     if (isSlackDryRun()) {
       return {
         dryRun: true,
@@ -48,6 +50,7 @@ export const slackNotify: Tool = {
     }
     const res = await fetch(url, {
       method: "POST",
+      signal: ctx.signal,
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ text: parsed.text }),
     });

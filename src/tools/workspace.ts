@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import { throwIfAborted } from "../abort.js";
 import type { Tool } from "../types.js";
 
 const REL_RE = /^[a-zA-Z0-9._-]+(?:\/[a-zA-Z0-9._-]+)*$/;
@@ -55,8 +56,9 @@ export const workspaceRead: Tool = {
   description:
     "Read a UTF-8 text file from the sandboxed workspace (data/workspace by default).",
   parameters: ReadArgs,
-  async execute(args) {
+  async execute(args, ctx) {
     const parsed = ReadArgs.parse(args);
+    throwIfAborted(ctx.signal, "workspace_read");
     if (isWorkspaceDryRun()) {
       return {
         dryRun: true,
@@ -87,8 +89,9 @@ export const workspaceWrite: Tool = {
     "Write a UTF-8 text file inside the sandboxed workspace. Irreversible. Path cannot escape the root.",
   parameters: WriteArgs,
   irreversible: true,
-  async execute(args) {
+  async execute(args, ctx) {
     const parsed = WriteArgs.parse(args);
+    throwIfAborted(ctx.signal, "workspace_write");
     assertSize(parsed.content);
     resolveWorkspacePath(parsed.path);
     if (isWorkspaceDryRun()) {

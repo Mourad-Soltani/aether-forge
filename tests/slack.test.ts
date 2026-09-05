@@ -73,3 +73,12 @@ test("slack_notify without webhook or dry-run throws", async () => {
 test("slack_notify is irreversible", () => {
   assert.equal(slackNotify.irreversible, true);
 });
+
+test("slack_notify honors an already-aborted signal", async () => {
+  const ac = new AbortController();
+  ac.abort();
+  await assert.rejects(
+    () => slackNotify.execute({ text: "aborted" }, { ...ctx(), signal: ac.signal }),
+    /slack_notify aborted/,
+  );
+});

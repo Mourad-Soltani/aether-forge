@@ -60,6 +60,19 @@ test("github_create_issue dry-run does not require a token", async () => {
   }
 });
 
+test("github_create_issue honors an already-aborted signal", async () => {
+  const ac = new AbortController();
+  ac.abort();
+  await assert.rejects(
+    () =>
+      githubCreateIssue.execute(
+        { owner: "Mourad-Soltani", repo: "aether-forge", title: "aborted" },
+        { ...ctx(), signal: ac.signal },
+      ),
+    /github_create_issue aborted/,
+  );
+});
+
 test("github_create_issue without token or dry-run throws", async () => {
   const prevDry = process.env.AETHER_GITHUB_DRY_RUN;
   const prevTok = process.env.GITHUB_TOKEN;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { throwIfAborted } from "../abort.js";
 import type { Tool } from "../types.js";
 
 const CreateIssueArgs = z.object({
@@ -25,8 +26,9 @@ export const githubCreateIssue: Tool = {
     "Create a GitHub issue. Requires GITHUB_TOKEN unless AETHER_GITHUB_DRY_RUN=1. Irreversible.",
   parameters: CreateIssueArgs,
   irreversible: true,
-  async execute(args) {
+  async execute(args, ctx) {
     const parsed = CreateIssueArgs.parse(args);
+    throwIfAborted(ctx.signal, "github_create_issue");
     if (isGithubDryRun()) {
       return {
         dryRun: true,
@@ -45,6 +47,7 @@ export const githubCreateIssue: Tool = {
     const url = `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}/issues`;
     const res = await fetch(url, {
       method: "POST",
+      signal: ctx.signal,
       headers: {
         accept: "application/vnd.github+json",
         authorization: `Bearer ${token}`,

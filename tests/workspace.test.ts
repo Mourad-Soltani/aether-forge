@@ -110,3 +110,20 @@ test("workspace_write is irreversible", () => {
   assert.equal(workspaceWrite.irreversible, true);
   assert.equal(workspaceRead.irreversible ?? false, false);
 });
+
+test("workspace tools honor an already-aborted signal", async () => {
+  const ac = new AbortController();
+  ac.abort();
+  await assert.rejects(
+    () =>
+      workspaceWrite.execute(
+        { path: "briefs/aborted.md", content: "nope" },
+        { ...ctx(), signal: ac.signal },
+      ),
+    /workspace_write aborted/,
+  );
+  await assert.rejects(
+    () => workspaceRead.execute({ path: "briefs/aborted.md" }, { ...ctx(), signal: ac.signal }),
+    /workspace_read aborted/,
+  );
+});

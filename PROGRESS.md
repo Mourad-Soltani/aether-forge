@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 18 — 2026-09-05)
+## Current Status (Session 19 — 2026-09-05)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -36,6 +36,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Session 16 — step `timeoutMs` + `withTimeout` (`src/timeout.ts`). `sleep_stub`. `wf.timeout.ok` / `wf.timeout.fail`. Tests in `tests/timeout.test.ts`. `demo.sh` includes timeout-ok.
 - [x] Session 17 — step `retry` (`maxAttempts` + linear `backoffMs`, `src/retry.ts`). `fail_n_stub`. `wf.retry.ok` / `wf.retry.fail`. Irreversible tools cannot set retry. Tests in `tests/retry.test.ts`. `demo.sh` includes retry-ok.
 - [x] Session 18 — step timeout now aborts `ToolContext.signal` (`runWithTimeout`). `http_request`, `llm_complete`, and `sleep_stub` cancel in-flight work. Tests in `tests/timeout.test.ts`.
+- [x] Session 19 — remaining connectors honor `ctx.signal`: GitHub, Slack, workspace read/write. LLM merges step abort + 20s provider timeout (`src/abort.ts`). Tests in `tests/abort.test.ts` + tool suites.
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Real (non-dry-run) workspace write against local `data/workspace` is available without secrets; optional operator proof
@@ -46,7 +47,7 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 2. Optional live Slack path when operator sets `SLACK_WEBHOOK_URL` locally (do not commit the URL). Dry-run is the default proof path.
 3. Optional real workspace write: unset `AETHER_WORKSPACE_DRY_RUN` and run `wf.files` or `wf.vertical` so `data/workspace/briefs/*.md` is written after approve.
 4. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
-5. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. Exponential backoff / jitter still deferred. Remaining tools may ignore `signal` (best-effort cancel).
+5. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. Exponential backoff / jitter still deferred.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -82,9 +83,10 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Session 16: step `timeoutMs` is an orchestrator race, not cooperative cancel. Max 120s. `sleep_stub` is a test/demo helper.
 - Session 17: step `retry.maxAttempts` (1–5) with linear `backoffMs` (cap 5s). Retry is forbidden on irreversible tools. `fail_n_stub` is a test/demo helper. `wf.retry.ok` is in `demo.sh`. `wf.retry.fail` is test-only.
 - Session 18: step timeout aborts `ToolContext.signal` via `runWithTimeout`. HTTP, LLM, and `sleep_stub` honor it. Other tools may still finish in the background.
+- Session 19: GitHub, Slack, and workspace tools honor `ctx.signal`. LLM no longer drops the step signal behind `AbortSignal.timeout`.
 
 ## Handoff for next session
-Session 18 ships AbortSignal cancellation on step timeout (`runWithTimeout` + `ctx.signal`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 19 ships AbortSignal on GitHub/Slack/workspace plus the LLM merge-signal fix. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 
 ```bash
 npm install
@@ -140,4 +142,10 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - `llm_complete` passes the signal to `fetch`.
 - `sleep_stub` rejects with `sleep_stub aborted` when signaled.
 - Tools that do not read the signal may still complete in the background after the run is marked failed.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Decisions (Session 19)
+- Connector HTTP calls take `ctx.signal` on `fetch`.
+- Workspace I/O is refused when the signal is already aborted (no partial write).
+- `mergeAbortSignals` combines step abort with tool-local timeouts (`AbortSignal.any` when available).
 - Chat-pasted PATs remain unusable for live `wf.github`.

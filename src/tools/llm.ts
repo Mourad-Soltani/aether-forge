@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { mergeAbortSignals, throwIfAborted } from "../abort.js";
 import type { Tool } from "../types.js";
 
 const LlmArgs = z.object({
@@ -46,6 +47,7 @@ export const llmComplete: Tool = {
   async execute(args, ctx) {
     const parsed = LlmArgs.parse(args);
     const cfg = resolveLlmConfig(parsed.model);
+    throwIfAborted(ctx.signal, "llm_complete");
     if (isLlmDryRun()) {
       return {
         dryRun: true,
@@ -68,13 +70,12 @@ export const llmComplete: Tool = {
         authorization: `Bearer ${cfg.apiKey}`,
         "content-type": "application/json",
       },
-      signal: ctx.signal,
       body: JSON.stringify({
         model: cfg.model,
         messages,
         temperature: 0.2,
       }),
-      signal: AbortSignal.timeout(20_000),
+      signal: mergeAbortSignals(ctx.signal, AbortSignal.timeout(20_000)),
     });
     const text = await res.text();
     let data: Record<string, unknown> = {};
