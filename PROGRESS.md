@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 22 — 2026-09-06)
+## Current Status (Session 23 — 2026-09-07)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -40,6 +40,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 20 — operator `cancel` on paused runs: status `cancelled`, CLI `--cancel`, `POST /runs/:id/cancel`, dashboard button. Tests in `tests/cancel.test.ts`. `demo.sh` step 12.
 - [x] Session 21 — live (non-dry-run) `wf.files` proof: isolated `AETHER_WORKSPACE_ROOT`, HITL pause → approve → `briefs/demo.md` on disk. Test in `tests/workspace.test.ts`. `demo.sh` writes `data/workspace-demo/briefs/demo.md` (`data/` gitignored).
 - [x] Session 22 — public surface hygiene: product-focused README, ROADMAP.md, repo description/topics; exit-marketing removed from public copy.
+- [x] Session 23 — retry failed runs from `completedStepIds` (CLI `--retry-failed`, `POST /runs/:id/retry`, dashboard).
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -88,9 +89,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 20: paused runs can be cancelled (`cancelled` status). Distinct from reject/`failed`. CLI `--cancel`, API + dashboard.
 
 - Session 21: secret-free live workspace proof uses an isolated root (`AETHER_WORKSPACE_ROOT`). Default `./data/workspace` is unchanged. HITL still applies when `autoApprove` is false.
+- Session 23: failed runs can resume from the first incomplete wave via `completedStepIds`. Cancelled runs stay terminal (use a new run). Chat-pasted PATs remain unusable for live `wf.github`.
 
 ## Handoff for next session
-Session 22 ships public surface hygiene (README, ROADMAP, description). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 23 ships retry-from-failed (`completedStepIds`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -122,6 +124,7 @@ npm run dev:web
 # npm run start:orchestrator -- --approve <runId>
 # npm run start:orchestrator -- --workflow timeout-ok
 # npm run start:orchestrator -- --workflow retry-ok
+# npm run start:orchestrator -- --retry-failed <runId>
 ```
 
 API:
@@ -134,6 +137,7 @@ API:
 - `POST /runs/:id/approve`
 - `POST /runs/:id/reject`
 - `POST /runs/:id/cancel`
+- `POST /runs/:id/retry` (failed runs only)
 
 Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`.
 
@@ -160,4 +164,10 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Cancel writes `cancelled`, not `failed`. Reject remains the failure path.
 - `summarizeRun.ok` is true for cancelled.
 - In-flight cancel of a currently executing tool is still deferred (process is single-shot per CLI invoke).
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Decisions (Session 23)
+- Successful waves record `completedStepIds`.
+- `retryFailedRun` only accepts `failed`. Cancelled stays terminal.
+- Retry continues the same run id (audit stays append-only).
 - Chat-pasted PATs remain unusable for live `wf.github`.

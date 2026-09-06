@@ -14,6 +14,7 @@ Enterprises do not struggle to call an LLM. They struggle to **coordinate irreve
 |------------|--------|
 | Sequential + parallel workflow waves | Live |
 | HITL approve / reject / cancel | Live |
+| Retry a failed run from completed waves | Live |
 | Audit log + `aether-audit-v1` export | Live |
 | HTTP connector | Live (no secrets) |
 | GitHub Issues, Slack, LLM | Live with env credentials; **dry-run** without secrets |
@@ -36,6 +37,7 @@ npm run start:orchestrator -- --workflow hitl
 npm run start:orchestrator -- --approve <runId>
 npm run start:orchestrator -- --reject <runId>
 npm run start:orchestrator -- --cancel <runId>
+npm run start:orchestrator -- --retry-failed <runId>
 ```
 
 Dry-run connectors (no tokens):

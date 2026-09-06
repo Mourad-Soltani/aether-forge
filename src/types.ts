@@ -97,4 +97,6 @@ export interface Run {
   pausedStepId?: string;
   /** Steps already approved for this run. */
   approvedStepIds?: string[];
+  /** Steps whose waves finished successfully. Used by retryFailedRun. */
+  completedStepIds?: string[];
 }

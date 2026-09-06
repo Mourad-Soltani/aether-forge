@@ -96,6 +96,10 @@ export async function executeWorkflow(
   if (existing?.pausedStepId) {
     const idx = waves.findIndex((w) => w.some((s) => s.id === existing.pausedStepId));
     startWave = Math.max(0, idx);
+  } else if (existing?.completedStepIds?.length) {
+    const done = new Set(existing.completedStepIds);
+    const idx = waves.findIndex((w) => w.some((s) => !done.has(s.id)));
+    startWave = idx < 0 ? waves.length : idx;
   }
 
   try {
@@ -110,6 +114,9 @@ export async function executeWorkflow(
         humanLog(`Persisted: ${file}`);
         return run;
       }
+      run.completedStepIds = [
+        ...new Set([...(run.completedStepIds ?? []), ...waves[w].map((s) => s.id)]),
+      ];
     }
     run.status = "completed";
     run.finishedAt = new Date().toISOString();
@@ -349,6 +356,25 @@ export async function cancelRun(runId: string): Promise<Run> {
   return run;
 }
 
+/** Continue a failed run from the first wave that is not in completedStepIds. */
+export async function retryFailedRun(runId: string): Promise<Run> {
+  const run = await loadRun(runId);
+  if (run.status !== "failed") {
+    throw new Error(`Run ${runId} is ${run.status}, expected failed`);
+  }
+  const { workflow, agents } = resolveWorkflow(run.workflowId);
+  appendAudit(run, {
+    type: "decision",
+    content: {
+      kind: "retry_failed",
+      completedStepIds: run.completedStepIds ?? [],
+    },
+  });
+  delete run.finishedAt;
+  delete run.error;
+  return executeWorkflow(workflow, agents, run);
+}
+
 function printUsage(): void {
   console.log(`Aether Forge orchestrator
 
@@ -358,6 +384,7 @@ Usage:
   npm run start:orchestrator -- --approve <runId>
   npm run start:orchestrator -- --reject <runId>
   npm run start:orchestrator -- --cancel <runId>
+  npm run start:orchestrator -- --retry-failed <runId>
   npm run start:orchestrator -- --export-audit <runId>
   npm run start:orchestrator -- --json --workflow hello
 
@@ -411,6 +438,18 @@ async function main() {
     const id = argv[cancelIdx + 1];
     if (!id) throw new Error("--cancel requires a run id");
     await cancelRun(id);
+    return;
+  }
+  const retryIdx = argv.indexOf("--retry-failed");
+  if (retryIdx >= 0) {
+    const id = argv[retryIdx + 1];
+    if (!id) throw new Error("--retry-failed requires a run id");
+    const run = await retryFailedRun(id);
+    humanLog("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
+    if (run.status === "failed") {
+      console.error("Error:", run.error);
+      process.exitCode = 1;
+    }
     return;
   }
   const wfIdx = argv.indexOf("--workflow");

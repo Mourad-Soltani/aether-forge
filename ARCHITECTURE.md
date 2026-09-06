@@ -43,10 +43,11 @@ Tools receive a `ToolContext` with `runId`, `agentId`, `memory`, and `audit`.
 4. Mark run `completed` or `failed`.
 5. Persist run to `data/runs/<runId>.json`.
 
-Resume (`--approve` / `--reject` / `--cancel` or `POST /runs/:id/approve|reject|cancel`):
+Resume (`--approve` / `--reject` / `--cancel` / `--retry-failed` or `POST /runs/:id/approve|reject|cancel|retry`):
 - reject → `decision` audit + `failed`
 - cancel → `decision` audit + `cancelled` (operator abort; not a tool failure)
 - approve → append step to `approvedStepIds`, continue from `pausedStepId`
+- retry-failed → only `failed` runs; continue from first wave not in `completedStepIds`
 
 Parallel steps: consecutive `mode: "parallel"` steps form a wave executed with `Promise.all`. HITL is checked for the whole wave before any tool in the wave runs. Distinct `writeTo` keys required inside a wave.
 
@@ -61,7 +62,7 @@ Run ids must match `[a-zA-Z0-9._-]` before any path join.
 ## Control API (Session 3–4)
 `src/api.ts` — Node `http` server, no extra runtime dependency.
 Default bind: `127.0.0.1:8787`.
-Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `/runs/:id/audit`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`, `POST /runs/:id/cancel`.
+Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `/runs/:id/audit`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`, `POST /runs/:id/cancel`, `POST /runs/:id/retry`.
 CORS origin default `http://localhost:3000`.
 Auth (Session 4): optional `AETHER_API_TOKEN`. When set, require `X-Aether-Token` or `Authorization: Bearer`. `/health` and `OPTIONS` stay open. Compare uses timing-safe equality.
 
@@ -208,4 +209,12 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - `wf.files` without `AETHER_WORKSPACE_DRY_RUN` writes `briefs/demo.md` under `AETHER_WORKSPACE_ROOT` (or `./data/workspace`).
 - Tests use an isolated temp root. `demo.sh` uses `data/workspace-demo` (gitignored via `data/`).
 - HITL is unchanged: pause then approve before the write.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 23 — Retry failed runs
+- Successful waves append their step ids to `Run.completedStepIds`.
+- `retryFailedRun` accepts only `failed` (not cancelled / paused / completed).
+- Resume starts at the first wave that still has an incomplete step.
+- CLI `--retry-failed`, API `POST /runs/:id/retry`, dashboard button on failed runs.
+- Irreversible tools in a later wave still require HITL on retry.
 - Chat-pasted PATs remain unusable for live `wf.github`.

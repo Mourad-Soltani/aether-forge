@@ -8,6 +8,7 @@
 - [x] Connectors: HTTP, GitHub Issues, Slack, workspace files, LLM (dry-run or env-gated)
 - [x] Loopback API + local dashboard
 - [x] Secret-free `npm run demo`
+- [x] Retry a failed run from completed waves
 
 ## Next
 

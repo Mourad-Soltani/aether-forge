@@ -62,6 +62,7 @@ export interface Run {
   error?: string;
   pausedStepId?: string;
   approvedStepIds?: string[];
+  completedStepIds?: string[];
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -110,6 +111,10 @@ export function decideRun(id: string, decision: "approve" | "reject") {
 
 export function cancelRun(id: string) {
   return request<{ run: Run }>(`/runs/${id}/cancel`, { method: "POST" });
+}
+
+export function retryFailedRun(id: string) {
+  return request<{ run: Run }>(`/runs/${id}/retry`, { method: "POST" });
 }
 
 export function fetchWorkflows() {

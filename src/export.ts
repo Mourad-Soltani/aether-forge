@@ -13,6 +13,7 @@ export interface AuditBundle {
     error?: string;
     memoryKeys: string[];
     approvedStepIds: string[];
+    completedStepIds: string[];
   };
   events: AuditEvent[];
 }
@@ -31,6 +32,7 @@ export function buildAuditBundle(run: Run, exportedAt = new Date().toISOString()
       error: run.error,
       memoryKeys: Object.keys(run.memory ?? {}),
       approvedStepIds: run.approvedStepIds ?? [],
+      completedStepIds: run.completedStepIds ?? [],
     },
     events: run.audit ?? [],
   };

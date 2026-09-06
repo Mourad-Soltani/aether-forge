@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { configuredApiToken, isAuthorized } from "./auth.js";
 import { buildAuditBundle } from "./export.js";
-import { cancelRun, executeWorkflow, resumeRun } from "./orchestrator.js";
+import { cancelRun, executeWorkflow, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
 
@@ -125,6 +125,13 @@ export async function handleRequest(
       return;
     }
 
+    const retryMatch = pathname.match(/^\/runs\/([^/]+)\/retry$/);
+    if (method === "POST" && retryMatch) {
+      const run = await retryFailedRun(retryMatch[1]);
+      json(res, 200, { run });
+      return;
+    }
+
     const actionMatch = pathname.match(/^\/runs\/([^/]+)\/(approve|reject)$/);
     if (method === "POST" && actionMatch) {
       const run = await resumeRun(
@@ -140,7 +147,7 @@ export async function handleRequest(
     const message = err instanceof Error ? err.message : String(err);
     const status = message.includes("Unknown workflow") || message.includes("Invalid run")
       ? 400
-      : message.includes("expected awaiting_approval")
+      : message.includes("expected awaiting_approval") || message.includes("expected failed")
         ? 409
         : 500;
     json(res, status, { error: message });

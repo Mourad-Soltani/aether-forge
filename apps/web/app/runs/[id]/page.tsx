@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cancelRun, decideRun, fetchAuditBundle, fetchRun, type Run } from "../../../lib/api";
+import { cancelRun, decideRun, fetchAuditBundle, fetchRun, retryFailedRun, type Run } from "../../../lib/api";
 import { useIntervalRefresh } from "../../../lib/useIntervalRefresh";
 
 export default function RunPage({ params }: { params: { id: string } }) {
@@ -92,6 +92,29 @@ export default function RunPage({ params }: { params: { id: string } }) {
             }}
           >
             Cancel
+          </button>
+        </div>
+      ) : null}
+      {run.status === "failed" ? (
+        <div className="row">
+          <button
+            className="ok"
+            disabled={busy}
+            onClick={() => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  const data = await retryFailedRun(params.id);
+                  setRun(data.run);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : String(err));
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+          >
+            Retry failed
           </button>
         </div>
       ) : null}
