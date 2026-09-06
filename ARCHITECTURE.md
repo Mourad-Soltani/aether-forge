@@ -203,3 +203,9 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - CLI `--cancel`, API `POST /runs/:id/cancel`, dashboard Cancel on paused runs.
 - `RunSummary.ok` stays true for cancelled (operator intent, not engine failure).
 - Live GitHub still blocked on a rotated token supplied outside chat.
+
+## Session 21 — Live workspace write proof
+- `wf.files` without `AETHER_WORKSPACE_DRY_RUN` writes `briefs/demo.md` under `AETHER_WORKSPACE_ROOT` (or `./data/workspace`).
+- Tests use an isolated temp root. `demo.sh` uses `data/workspace-demo` (gitignored via `data/`).
+- HITL is unchanged: pause then approve before the write.
+- Chat-pasted PATs remain unusable for live `wf.github`.

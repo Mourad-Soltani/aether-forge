@@ -127,3 +127,36 @@ test("workspace tools honor an already-aborted signal", async () => {
     /workspace_read aborted/,
   );
 });
+
+test("wf.files live write: approve persists briefs/demo.md under isolated root", async () => {
+  const { executeWorkflow, resumeRun } = await import("../src/orchestrator.js");
+  const { resolveWorkflow } = await import("../src/workflows/registry.js");
+  const dir = await mkdtemp(path.join(os.tmpdir(), "aether-ws-live-"));
+  const prevDry = process.env.AETHER_WORKSPACE_DRY_RUN;
+  const prevRoot = process.env.AETHER_WORKSPACE_ROOT;
+  try {
+    delete process.env.AETHER_WORKSPACE_DRY_RUN;
+    process.env.AETHER_WORKSPACE_ROOT = dir;
+    assert.equal(isWorkspaceDryRun(), false);
+
+    const { workflow, agents } = resolveWorkflow("files");
+    const paused = await executeWorkflow(workflow, agents);
+    assert.equal(paused.status, "awaiting_approval");
+
+    const done = await resumeRun(paused.id, "approve");
+    assert.equal(done.status, "completed");
+    const fileMem = done.memory.file as { dryRun?: boolean; path?: string; written?: boolean };
+    assert.equal(fileMem.dryRun, false);
+    assert.equal(fileMem.written, true);
+    assert.equal(fileMem.path, "briefs/demo.md");
+
+    const onDisk = await readFile(path.join(dir, "briefs", "demo.md"), "utf8");
+    assert.match(onDisk, /Aether Forge brief/);
+  } finally {
+    if (prevDry === undefined) delete process.env.AETHER_WORKSPACE_DRY_RUN;
+    else process.env.AETHER_WORKSPACE_DRY_RUN = prevDry;
+    if (prevRoot === undefined) delete process.env.AETHER_WORKSPACE_ROOT;
+    else process.env.AETHER_WORKSPACE_ROOT = prevRoot;
+    await rm(dir, { recursive: true, force: true });
+  }
+});

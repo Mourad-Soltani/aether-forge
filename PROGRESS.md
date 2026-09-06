@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent OS for enterprises. Turns scattered tools & data into an autonomous, auditable AI workforce that executes end-to-end workflows. Target: strong product + traction → $1B+ exit path within ~12 months.
 
-## Current Status (Session 20 — 2026-09-06)
+## Current Status (Session 21 — 2026-09-06)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -38,17 +38,16 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - [x] Session 18 — step timeout now aborts `ToolContext.signal` (`runWithTimeout`). `http_request`, `llm_complete`, and `sleep_stub` cancel in-flight work. Tests in `tests/timeout.test.ts`.
 - [x] Session 19 — remaining connectors honor `ctx.signal`: GitHub, Slack, workspace read/write. LLM merges step abort + 20s provider timeout (`src/abort.ts`). Tests in `tests/abort.test.ts` + tool suites.
 - [x] Session 20 — operator `cancel` on paused runs: status `cancelled`, CLI `--cancel`, `POST /runs/:id/cancel`, dashboard button. Tests in `tests/cancel.test.ts`. `demo.sh` step 12.
+- [x] Session 21 — live (non-dry-run) `wf.files` proof: isolated `AETHER_WORKSPACE_ROOT`, HITL pause → approve → `briefs/demo.md` on disk. Test in `tests/workspace.test.ts`. `demo.sh` writes `data/workspace-demo/briefs/demo.md` (`data/` gitignored).
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
-- [ ] Real (non-dry-run) workspace write against local `data/workspace` is available without secrets; optional operator proof
 - [ ] Landing-page copy + buyer shortlist (after one recorded live GitHub proof)
 
 ## Next Up (highest priority)
 1. Execute `wf.github` once with a human-supplied **rotated**, least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit. Do not reuse any PAT that appeared in a chat prompt (including this session).
 2. Optional live Slack path when operator sets `SLACK_WEBHOOK_URL` locally (do not commit the URL). Dry-run is the default proof path.
-3. Optional real workspace write: unset `AETHER_WORKSPACE_DRY_RUN` and run `wf.files` or `wf.vertical` so `data/workspace/briefs/*.md` is written after approve.
-4. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
-5. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. Exponential backoff / jitter still deferred.
+3. After one live GitHub proof: landing-page copy + buyer shortlist (do not start outreach until demo is recorded).
+4. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. Exponential backoff / jitter still deferred.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -87,8 +86,10 @@ Private multi-agent OS for enterprises. Turns scattered tools & data into an aut
 - Session 19: GitHub, Slack, and workspace tools honor `ctx.signal`. LLM no longer drops the step signal behind `AbortSignal.timeout`.
 - Session 20: paused runs can be cancelled (`cancelled` status). Distinct from reject/`failed`. CLI `--cancel`, API + dashboard.
 
+- Session 21: secret-free live workspace proof uses an isolated root (`AETHER_WORKSPACE_ROOT`). Default `./data/workspace` is unchanged. HITL still applies when `autoApprove` is false.
+
 ## Handoff for next session
-Session 20 ships operator cancel (`cancelled` ≠ `failed`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 21 ships a real disk write for `wf.files` under an isolated workspace root. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 
 ```bash
 npm install
@@ -110,10 +111,9 @@ npm run dev:web
 # export XAI_API_KEY=...   # or OPENAI_API_KEY / AETHER_LLM_API_KEY
 # npm run start:orchestrator -- --workflow llm
 # npm run start:orchestrator -- --workflow slack
-# unset AETHER_WORKSPACE_DRY_RUN
-# npm run start:orchestrator -- --workflow files
+# live files already covered by npm run demo (data/workspace-demo)
+# AETHER_WORKSPACE_ROOT=./data/workspace npm run start:orchestrator -- --workflow files
 # npm run start:orchestrator -- --approve <runId>
-# # writes data/workspace/briefs/demo.md
 # npm run start:orchestrator -- --workflow parallel
 # npm run start:orchestrator -- --workflow parallel-hitl
 # AETHER_LLM_DRY_RUN=1 AETHER_WORKSPACE_DRY_RUN=1 npm run start:orchestrator -- --workflow vertical

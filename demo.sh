@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Aether Forge — secret-free local demo
-# Walks wf.hello → wf.http → wf.hitl → github/slack/files dry-run → llm/parallel/vertical → timeout → retry → cancel.
+# Walks wf.hello → wf.http → wf.hitl → github/slack/files dry-run → files live write → llm/parallel/vertical → timeout → retry → cancel.
 # Does not require GITHUB_TOKEN or SLACK_WEBHOOK_URL.
 set -euo pipefail
 
@@ -136,6 +136,25 @@ expect_status "$FS_APPROVE_JSON" completed >/dev/null
 unset AETHER_WORKSPACE_DRY_RUN || true
 
 echo
+echo "==> 6b/13 wf.files live write (isolated AETHER_WORKSPACE_ROOT, no secrets)"
+LIVE_ROOT="$ROOT/data/workspace-demo"
+mkdir -p "$LIVE_ROOT"
+export AETHER_WORKSPACE_ROOT="$LIVE_ROOT"
+FS_LIVE_RAW="$(run_orch --workflow files 2> >(tee /dev/stderr >&2))"
+FS_LIVE_JSON="$(printf '%s\n' "$FS_LIVE_RAW" | parse_summary)"
+FS_LIVE_ID="$(expect_status "$FS_LIVE_JSON" awaiting_approval)"
+echo "    paused run: $FS_LIVE_ID"
+FS_LIVE_APPROVE_RAW="$(run_orch --approve "$FS_LIVE_ID" 2> >(tee /dev/stderr >&2))"
+FS_LIVE_APPROVE_JSON="$(printf '%s\n' "$FS_LIVE_APPROVE_RAW" | parse_summary)"
+expect_status "$FS_LIVE_APPROVE_JSON" completed >/dev/null
+if [[ ! -f "$LIVE_ROOT/briefs/demo.md" ]]; then
+  echo "error: expected live workspace file $LIVE_ROOT/briefs/demo.md" >&2
+  exit 1
+fi
+echo "    wrote $LIVE_ROOT/briefs/demo.md ($(wc -c < "$LIVE_ROOT/briefs/demo.md") bytes)"
+unset AETHER_WORKSPACE_ROOT || true
+
+echo
 echo "==> 7/12 wf.llm dry-run (no API key)"
 export AETHER_LLM_DRY_RUN=1
 LLM_RAW="$(run_orch --workflow llm 2> >(tee /dev/stderr >&2))"
@@ -216,6 +235,7 @@ echo "  hitl:    $HITL_ID (paused then approved)"
 echo "  github:  $GH_ID (dry-run pause then approve)"
 echo "  slack:   $SL_ID (dry-run pause then approve)"
 echo "  files:   $FS_ID (dry-run pause then approve)"
+echo "  files-live: $FS_LIVE_ID → $LIVE_ROOT/briefs/demo.md"
 echo "  llm:     $LLM_ID (dry-run complete)"
 echo "  parallel: $PAR_ID"
 echo "  vertical: $VERT_ID (dry-run pause then approve)"

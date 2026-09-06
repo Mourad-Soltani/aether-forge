@@ -9,7 +9,7 @@ Solves the massive knowledge-work coordination tax. Target: product + early trac
 ```bash
 npm install
 npm test                     # node:test — RunSummary, persist, audit, connectors
-npm run demo                 # … → timeout-ok → retry-ok → hitl cancel
+npm run demo                 # … → files dry-run → files live write → … → hitl cancel
 npm run start:orchestrator
 npm run start:orchestrator -- --workflow http
 npm run start:orchestrator -- --workflow hitl
