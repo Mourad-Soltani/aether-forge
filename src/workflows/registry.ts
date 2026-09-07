@@ -8,7 +8,7 @@ import { llmDemoAgents, llmDemoWorkflow } from "./llm-demo.js";
 import { parallelDemoAgents, parallelDemoWorkflow, parallelHitlWorkflow } from "./parallel-demo.js";
 import { verticalDemoAgents, verticalDemoWorkflow } from "./vertical-demo.js";
 import { timeoutDemoAgents, timeoutOkWorkflow, timeoutFailWorkflow } from "./timeout-demo.js";
-import { retryDemoAgents, retryOkWorkflow, retryFailWorkflow } from "./retry-demo.js";
+import { retryDemoAgents, retryOkWorkflow, retryFailWorkflow, retryExpWorkflow } from "./retry-demo.js";
 
 export interface RegisteredWorkflow {
   workflow: Workflow;
@@ -44,6 +44,8 @@ export const workflowRegistry: Record<string, RegisteredWorkflow> = {
   "retry-ok": { workflow: retryOkWorkflow, agents: retryDemoAgents },
   [retryFailWorkflow.id]: { workflow: retryFailWorkflow, agents: retryDemoAgents },
   "retry-fail": { workflow: retryFailWorkflow, agents: retryDemoAgents },
+  [retryExpWorkflow.id]: { workflow: retryExpWorkflow, agents: retryDemoAgents },
+  "retry-exp": { workflow: retryExpWorkflow, agents: retryDemoAgents },
 };
 
 export function resolveWorkflow(id: string): RegisteredWorkflow {

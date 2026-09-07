@@ -9,6 +9,7 @@
 - [x] Loopback API + local dashboard
 - [x] Secret-free `npm run demo`
 - [x] Retry a failed run from completed waves
+- [x] Exponential backoff + optional jitter on step retries
 
 ## Next
 
@@ -20,7 +21,7 @@
 ## Later
 
 - Nested / DAG dependencies beyond consecutive parallel waves
-- Exponential backoff / jitter on retries
+- Exponential backoff / jitter on retries (shipped Session 24; DAG still later)
 - LLM planner on top of the scripted engine
 - Stronger multi-tenant / packaged single-tenant deploy
 - Broader connector set driven by pilot demand

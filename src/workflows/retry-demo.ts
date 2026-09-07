@@ -55,3 +55,21 @@ export const retryFailWorkflow: Workflow = {
     },
   ],
 };
+
+/** Same recovery as retry-ok but exponential base delay (tiny for tests). */
+export const retryExpWorkflow: Workflow = {
+  id: "wf.retry.exp",
+  name: "Retry exponential",
+  description: "fail_n_stub fails twice; exponential backoff between attempts",
+  autoApprove: true,
+  steps: [
+    {
+      id: "step.retry.exp",
+      agentId: "agent.retry",
+      toolName: "fail_n_stub",
+      args: { failTimes: 2, label: "demo-exp" },
+      writeTo: "recovered",
+      retry: { maxAttempts: 3, backoffMs: 8, strategy: "exponential", jitter: 0 },
+    },
+  ],
+};

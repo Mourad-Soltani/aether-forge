@@ -4,7 +4,7 @@ import { auditBundleToJsonl, buildAuditBundle } from "./export.js";
 import { listRuns, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
-import { resolveStepRetry, sleep } from "./retry.js";
+import { resolveStepRetry, computeBackoffMs, sleep } from "./retry.js";
 import { resolveStepTimeoutMs, runWithTimeout } from "./timeout.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
@@ -256,6 +256,7 @@ async function executeWave(
             },
           });
           if (attempt >= retry.maxAttempts) throw err;
+          const backoffMs = computeBackoffMs(retry, attempt);
           appendAudit(run, {
             type: "decision",
             agentId: agent.id,
@@ -265,10 +266,12 @@ async function executeWave(
               tool: tool.name,
               attempt,
               nextAttempt: attempt + 1,
-              backoffMs: retry.backoffMs,
+              backoffMs,
+              strategy: retry.strategy,
+              jitter: retry.jitter,
             },
           });
-          await sleep(retry.backoffMs);
+          await sleep(backoffMs);
         }
       }
       if (lastErr) throw lastErr;

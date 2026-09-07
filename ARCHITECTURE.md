@@ -218,3 +218,12 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - CLI `--retry-failed`, API `POST /runs/:id/retry`, dashboard button on failed runs.
 - Irreversible tools in a later wave still require HITL on retry.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Session 24 — Exponential backoff + jitter
+- `retry.strategy` is `linear` (default, Session 17) or `exponential`.
+- Exponential delay after attempt *n* is `min(cap, backoffMs * 2^(n-1))`. Cap remains 5s.
+- `retry.jitter` is a fraction in `[0, 1]` (default 0). Equal jitter: `base * (1 - j + 2j*rand)`.
+- Audit `decision.kind=retry` records the computed `backoffMs`, `strategy`, and `jitter`.
+- `wf.retry.exp` is the secret-free proof path. Existing `wf.retry.ok` stays linear.
+- Chat-pasted PATs remain unusable for live `wf.github`.

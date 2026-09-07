@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 23 — 2026-09-07)
+## Current Status (Session 24 — 2026-09-07)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -49,7 +49,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 1. Execute `wf.github` once with a human-supplied **rotated**, least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit. Do not reuse any PAT that appeared in a chat prompt (including this session).
 2. Optional live Slack path when operator sets `SLACK_WEBHOOK_URL` locally (do not commit the URL). Dry-run is the default proof path.
 3. After one live GitHub proof: landing-page copy + pilot packaging (do not start external outreach until demo is recorded).
-4. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred. Exponential backoff / jitter still deferred.
+4. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -62,7 +62,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Hello-workflow uses `autoApprove: true` so daily CI / headless runs complete.
 - HTTP tool blocks non-http(s) URLs. GitHub issue create is irreversible and refuses to run without env token (unless dry-run).
 - HITL pause stores `pausedStepId` + `approvedStepIds` on the Run; resume continues from that step.
-- Workflow registry keys: `hello` / `wf.hello`, `hitl` / `wf.hitl`, `http` / `wf.http`, `github` / `wf.github`, `slack` / `wf.slack`, `files` / `wf.files`, `llm` / `wf.llm`, `parallel` / `wf.parallel`, `parallel-hitl` / `wf.parallel.hitl`, `vertical` / `wf.vertical`, `timeout-ok` / `wf.timeout.ok`, `timeout-fail` / `wf.timeout.fail`, `retry-ok` / `wf.retry.ok`, `retry-fail` / `wf.retry.fail`.
+- Workflow registry keys: `hello` / `wf.hello`, `hitl` / `wf.hitl`, `http` / `wf.http`, `github` / `wf.github`, `slack` / `wf.slack`, `files` / `wf.files`, `llm` / `wf.llm`, `parallel` / `wf.parallel`, `parallel-hitl` / `wf.parallel.hitl`, `vertical` / `wf.vertical`, `timeout-ok` / `wf.timeout.ok`, `timeout-fail` / `wf.timeout.fail`, `retry-ok` / `wf.retry.ok`, `retry-fail` / `wf.retry.fail`, `retry-exp` / `wf.retry.exp`.
 - Dashboard never reads `data/runs` from the browser. All list/get/approve/reject go through `src/api.ts`.
 - API binds to `127.0.0.1:8787` by default (`AETHER_API_PORT`, `AETHER_CORS_ORIGIN`).
 - Run ids are restricted to `[a-zA-Z0-9._-]` before filesystem access.
@@ -90,9 +90,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 
 - Session 21: secret-free live workspace proof uses an isolated root (`AETHER_WORKSPACE_ROOT`). Default `./data/workspace` is unchanged. HITL still applies when `autoApprove` is false.
 - Session 23: failed runs can resume from the first incomplete wave via `completedStepIds`. Cancelled runs stay terminal (use a new run). Chat-pasted PATs remain unusable for live `wf.github`.
+- Session 24: step retry may use `strategy: exponential` and `jitter` in [0,1]. Default remains linear / no jitter so existing demos stay deterministic.
 
 ## Handoff for next session
-Session 23 ships retry-from-failed (`completedStepIds`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 24 ships exponential backoff + jitter on step retries (`wf.retry.exp`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -170,4 +171,12 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Successful waves record `completedStepIds`.
 - `retryFailedRun` only accepts `failed`. Cancelled stays terminal.
 - Retry continues the same run id (audit stays append-only).
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Decisions (Session 24)
+- Default retry strategy stays linear so Session 17 demos and tests stay deterministic.
+- Exponential uses `backoffMs * 2^(attempt-1)` capped at 5s.
+- Jitter is equal-jitter around the computed base. `jitter: 0` (default) is exact.
+- `wf.retry.exp` is registered; `demo.sh` still uses linear `wf.retry.ok` (fast, deterministic).
 - Chat-pasted PATs remain unusable for live `wf.github`.

@@ -72,7 +72,12 @@ export interface Step {
   /** Orchestrator-level cap for this step's execute(). AbortSignal is passed to the tool. */
   timeoutMs?: number;
   /** Transient-failure retries. Not allowed on irreversible tools. */
-  retry?: { maxAttempts: number; backoffMs?: number };
+  retry?: {
+    maxAttempts: number;
+    backoffMs?: number;
+    strategy?: "linear" | "exponential";
+    jitter?: number;
+  };
 }
 
 export interface Workflow {
