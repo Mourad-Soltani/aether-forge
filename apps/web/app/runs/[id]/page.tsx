@@ -9,6 +9,7 @@ export default function RunPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [live, setLive] = useState(true);
+  const [reason, setReason] = useState("");
 
   async function load() {
     try {
@@ -68,6 +69,20 @@ export default function RunPage({ params }: { params: { id: string } }) {
       ) : null}
       {run.error ? <p className="err">{run.error}</p> : null}
       {run.status === "awaiting_approval" ? (
+        <div>
+        <p>
+          <label className="muted">
+            Decision note (optional)
+            <br />
+            <textarea
+              rows={2}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Why approve, reject, or cancel?"
+              style={{ width: "100%", marginTop: 4 }}
+            />
+          </label>
+        </p>
         <div className="row">
           <button className="ok" disabled={busy} onClick={() => void onDecide("approve")}>
             Approve
@@ -81,7 +96,7 @@ export default function RunPage({ params }: { params: { id: string } }) {
               void (async () => {
                 setBusy(true);
                 try {
-                  const data = await cancelRun(params.id);
+                  const data = await cancelRun(params.id, reason || undefined);
                   setRun(data.run);
                 } catch (err) {
                   setError(err instanceof Error ? err.message : String(err));
@@ -93,6 +108,7 @@ export default function RunPage({ params }: { params: { id: string } }) {
           >
             Cancel
           </button>
+        </div>
         </div>
       ) : null}
       {run.status === "failed" ? (

@@ -105,12 +105,18 @@ export function startRun(workflowId: string) {
   });
 }
 
-export function decideRun(id: string, decision: "approve" | "reject") {
-  return request<{ run: Run }>(`/runs/${id}/${decision}`, { method: "POST" });
+export function decideRun(id: string, decision: "approve" | "reject", reason?: string) {
+  return request<{ run: Run }>(`/runs/${id}/${decision}`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
 }
 
-export function cancelRun(id: string) {
-  return request<{ run: Run }>(`/runs/${id}/cancel`, { method: "POST" });
+export function cancelRun(id: string, reason?: string) {
+  return request<{ run: Run }>(`/runs/${id}/cancel`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
 }
 
 export function retryFailedRun(id: string) {

@@ -120,7 +120,8 @@ export async function handleRequest(
 
     const cancelMatch = pathname.match(/^\/runs\/([^/]+)\/cancel$/);
     if (method === "POST" && cancelMatch) {
-      const run = await cancelRun(cancelMatch[1]);
+      const body = (await readBody(req)) as { reason?: string };
+      const run = await cancelRun(cancelMatch[1], body.reason);
       json(res, 200, { run });
       return;
     }
@@ -134,9 +135,11 @@ export async function handleRequest(
 
     const actionMatch = pathname.match(/^\/runs\/([^/]+)\/(approve|reject)$/);
     if (method === "POST" && actionMatch) {
+      const body = (await readBody(req)) as { reason?: string };
       const run = await resumeRun(
         actionMatch[1],
         actionMatch[2] as "approve" | "reject",
+        body.reason,
       );
       json(res, 200, { run });
       return;

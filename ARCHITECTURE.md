@@ -227,3 +227,11 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Audit `decision.kind=retry` records the computed `backoffMs`, `strategy`, and `jitter`.
 - `wf.retry.exp` is the secret-free proof path. Existing `wf.retry.ok` stays linear.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Session 25 — Decision reason
+- `resumeRun` and `cancelRun` accept an optional operator `reason`.
+- Reason is normalized (`src/decision.ts`): trim, collapse whitespace, drop control chars, cap 500.
+- Stored only on the `decision` audit event (`content.reason`). Omitted when empty so prior payloads stay compatible.
+- CLI `--reason`, API JSON body `{ "reason" }`, dashboard textarea.
+- Chat-pasted PATs remain unusable for live `wf.github`.

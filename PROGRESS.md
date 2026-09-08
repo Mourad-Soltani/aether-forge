@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 24 — 2026-09-07)
+## Current Status (Session 25 — 2026-09-09)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -41,6 +41,8 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 21 — live (non-dry-run) `wf.files` proof: isolated `AETHER_WORKSPACE_ROOT`, HITL pause → approve → `briefs/demo.md` on disk. Test in `tests/workspace.test.ts`. `demo.sh` writes `data/workspace-demo/briefs/demo.md` (`data/` gitignored).
 - [x] Session 22 — public surface hygiene: product-focused README, ROADMAP.md, repo description/topics; exit-marketing removed from public copy.
 - [x] Session 23 — retry failed runs from `completedStepIds` (CLI `--retry-failed`, `POST /runs/:id/retry`, dashboard).
+- [x] Session 24 — exponential backoff + jitter on step retry (`wf.retry.exp`)
+- [x] Session 25 — optional operator `reason` on approve / reject / cancel
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -91,9 +93,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 21: secret-free live workspace proof uses an isolated root (`AETHER_WORKSPACE_ROOT`). Default `./data/workspace` is unchanged. HITL still applies when `autoApprove` is false.
 - Session 23: failed runs can resume from the first incomplete wave via `completedStepIds`. Cancelled runs stay terminal (use a new run). Chat-pasted PATs remain unusable for live `wf.github`.
 - Session 24: step retry may use `strategy: exponential` and `jitter` in [0,1]. Default remains linear / no jitter so existing demos stay deterministic.
+- Session 25: HITL decisions may include a short operator `reason` (max 500) on the audit event. Empty reason is omitted.
 
 ## Handoff for next session
-Session 24 ships exponential backoff + jitter on step retries (`wf.retry.exp`). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 25 ships optional decision notes on approve/reject/cancel. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -109,7 +112,7 @@ npm run dev:web
 # unset AETHER_GITHUB_DRY_RUN
 # export GITHUB_TOKEN=...   # issues:write on Mourad-Soltani/aether-forge only; rotated
 # npm run start:orchestrator -- --workflow github
-# npm run start:orchestrator -- --approve <runId>
+# npm run start:orchestrator -- --approve <runId> --reason "looks good"
 # unset AETHER_SLACK_DRY_RUN
 # export SLACK_WEBHOOK_URL=...
 # unset AETHER_LLM_DRY_RUN
@@ -118,11 +121,11 @@ npm run dev:web
 # npm run start:orchestrator -- --workflow slack
 # live files already covered by npm run demo (data/workspace-demo)
 # AETHER_WORKSPACE_ROOT=./data/workspace npm run start:orchestrator -- --workflow files
-# npm run start:orchestrator -- --approve <runId>
+# npm run start:orchestrator -- --approve <runId> --reason "looks good"
 # npm run start:orchestrator -- --workflow parallel
 # npm run start:orchestrator -- --workflow parallel-hitl
 # AETHER_LLM_DRY_RUN=1 AETHER_WORKSPACE_DRY_RUN=1 npm run start:orchestrator -- --workflow vertical
-# npm run start:orchestrator -- --approve <runId>
+# npm run start:orchestrator -- --approve <runId> --reason "looks good"
 # npm run start:orchestrator -- --workflow timeout-ok
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>
@@ -135,9 +138,9 @@ API:
 - `GET /runs/:id`
 - `GET /runs/:id/audit` (`aether-audit-v1` bundle)
 - `POST /runs` `{ "workflowId": "wf.hitl" | "wf.github" | "wf.slack" | "wf.files" | "wf.parallel" | "wf.vertical" | ... }`
-- `POST /runs/:id/approve`
-- `POST /runs/:id/reject`
-- `POST /runs/:id/cancel`
+- `POST /runs/:id/approve` body `{ "reason"?: string }`
+- `POST /runs/:id/reject` body `{ "reason"?: string }`
+- `POST /runs/:id/cancel` body `{ "reason"?: string }`
 - `POST /runs/:id/retry` (failed runs only)
 
 Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`.
@@ -179,4 +182,11 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Exponential uses `backoffMs * 2^(attempt-1)` capped at 5s.
 - Jitter is equal-jitter around the computed base. `jitter: 0` (default) is exact.
 - `wf.retry.exp` is registered; `demo.sh` still uses linear `wf.retry.ok` (fast, deterministic).
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Decisions (Session 25)
+- Optional `reason` on approve / reject / cancel is an audit annotation, not a new run status.
+- Normalization lives in `src/decision.ts` (trim, collapse whitespace, drop controls, cap 500).
+- Omitted when empty so existing tests and exporters keep working.
 - Chat-pasted PATs remain unusable for live `wf.github`.

@@ -5,6 +5,7 @@ import { listRuns, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
 import { resolveStepRetry, computeBackoffMs, sleep } from "./retry.js";
+import { normalizeDecisionReason } from "./decision.js";
 import { resolveStepTimeoutMs, runWithTimeout } from "./timeout.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
@@ -298,6 +299,7 @@ async function executeWave(
 export async function resumeRun(
   runId: string,
   decision: "approve" | "reject",
+  reason?: string,
 ): Promise<Run> {
   const run = await loadRun(runId);
   if (run.status !== "awaiting_approval") {
@@ -305,6 +307,7 @@ export async function resumeRun(
       `Run ${runId} is ${run.status}, expected awaiting_approval`,
     );
   }
+  const note = normalizeDecisionReason(reason);
   const { workflow, agents } = resolveWorkflow(run.workflowId);
 
   if (decision === "reject") {
@@ -314,7 +317,11 @@ export async function resumeRun(
     appendAudit(run, {
       type: "decision",
       stepId: run.pausedStepId,
-      content: { decision: "reject", stepId: run.pausedStepId },
+      content: {
+        decision: "reject",
+        stepId: run.pausedStepId,
+        ...(note ? { reason: note } : {}),
+      },
     });
     appendAudit(run, { type: "run_end", content: { status: run.status } });
     const file = await saveRun(run);
@@ -330,26 +337,35 @@ export async function resumeRun(
   appendAudit(run, {
     type: "decision",
     stepId: run.pausedStepId,
-    content: { decision: "approve", stepId: run.pausedStepId },
+    content: {
+      decision: "approve",
+      stepId: run.pausedStepId,
+      ...(note ? { reason: note } : {}),
+    },
   });
   return executeWorkflow(workflow, agents, run);
 }
 
 /** Operator abort of a paused run. Distinct from reject (failed). Terminal, no tool execute. */
-export async function cancelRun(runId: string): Promise<Run> {
+export async function cancelRun(runId: string, reason?: string): Promise<Run> {
   const run = await loadRun(runId);
   if (run.status !== "awaiting_approval") {
     throw new Error(
       `Run ${runId} is ${run.status}, expected awaiting_approval`,
     );
   }
+  const note = normalizeDecisionReason(reason);
   run.status = "cancelled";
   run.finishedAt = new Date().toISOString();
   run.error = `Cancelled at step ${run.pausedStepId}`;
   appendAudit(run, {
     type: "decision",
     stepId: run.pausedStepId,
-    content: { decision: "cancel", stepId: run.pausedStepId },
+    content: {
+      decision: "cancel",
+      stepId: run.pausedStepId,
+      ...(note ? { reason: note } : {}),
+    },
   });
   appendAudit(run, { type: "run_end", content: { status: run.status } });
   const file = await saveRun(run);
@@ -384,9 +400,9 @@ function printUsage(): void {
 Usage:
   npm run start:orchestrator [-- --workflow <hello|hitl|http|parallel|wf.*>]
   npm run start:orchestrator -- --list
-  npm run start:orchestrator -- --approve <runId>
-  npm run start:orchestrator -- --reject <runId>
-  npm run start:orchestrator -- --cancel <runId>
+  npm run start:orchestrator -- --approve <runId> [--reason "..."]
+  npm run start:orchestrator -- --reject <runId> [--reason "..."]
+  npm run start:orchestrator -- --cancel <runId> [--reason "..."]
   npm run start:orchestrator -- --retry-failed <runId>
   npm run start:orchestrator -- --export-audit <runId>
   npm run start:orchestrator -- --json --workflow hello
@@ -394,6 +410,13 @@ Usage:
 --json prints one RunSummary object to stdout; human logs go to stderr.
 --export-audit prints aether-audit-v1 JSONL (header + events) to stdout.
 `);
+}
+
+
+function readReasonFlag(argv: string[]): string | undefined {
+  const idx = argv.indexOf("--reason");
+  if (idx < 0) return undefined;
+  return argv[idx + 1];
 }
 
 async function main() {
@@ -424,7 +447,7 @@ async function main() {
   if (approveIdx >= 0) {
     const id = argv[approveIdx + 1];
     if (!id) throw new Error("--approve requires a run id");
-    const run = await resumeRun(id, "approve");
+    const run = await resumeRun(id, "approve", readReasonFlag(argv));
     humanLog("Memory keys:", Object.keys(run.memory).join(", ") || "(none)");
     if (run.error) process.exitCode = 1;
     return;
@@ -433,14 +456,14 @@ async function main() {
   if (rejectIdx >= 0) {
     const id = argv[rejectIdx + 1];
     if (!id) throw new Error("--reject requires a run id");
-    await resumeRun(id, "reject");
+    await resumeRun(id, "reject", readReasonFlag(argv));
     return;
   }
   const cancelIdx = argv.indexOf("--cancel");
   if (cancelIdx >= 0) {
     const id = argv[cancelIdx + 1];
     if (!id) throw new Error("--cancel requires a run id");
-    await cancelRun(id);
+    await cancelRun(id, readReasonFlag(argv));
     return;
   }
   const retryIdx = argv.indexOf("--retry-failed");

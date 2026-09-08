@@ -10,6 +10,7 @@
 - [x] Secret-free `npm run demo`
 - [x] Retry a failed run from completed waves
 - [x] Exponential backoff + optional jitter on step retries
+- [x] Optional operator reason on approve / reject / cancel
 
 ## Next
 
