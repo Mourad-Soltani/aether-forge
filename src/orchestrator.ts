@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { appendAudit } from "./audit.js";
+import { appendAudit, verifyAuditChain } from "./audit.js";
 import { auditBundleToJsonl, buildAuditBundle } from "./export.js";
 import { listRuns, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
@@ -405,10 +405,12 @@ Usage:
   npm run start:orchestrator -- --cancel <runId> [--reason "..."]
   npm run start:orchestrator -- --retry-failed <runId>
   npm run start:orchestrator -- --export-audit <runId>
+  npm run start:orchestrator -- --verify-audit <runId>
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
 --export-audit prints aether-audit-v1 JSONL (header + events) to stdout.
+--verify-audit prints the hash-chain report JSON and exits 1 if chain.ok is false.
 `);
 }
 
@@ -441,6 +443,16 @@ async function main() {
     if (!id) throw new Error("--export-audit requires a run id");
     const run = await loadRun(id);
     process.stdout.write(auditBundleToJsonl(buildAuditBundle(run)));
+    return;
+  }
+  const verifyIdx = argv.indexOf("--verify-audit");
+  if (verifyIdx >= 0) {
+    const id = argv[verifyIdx + 1];
+    if (!id) throw new Error("--verify-audit requires a run id");
+    const run = await loadRun(id);
+    const report = verifyAuditChain(run.audit);
+    process.stdout.write(JSON.stringify({ runId: run.id, ...report }) + "\n");
+    if (!report.ok) process.exitCode = 1;
     return;
   }
   const approveIdx = argv.indexOf("--approve");

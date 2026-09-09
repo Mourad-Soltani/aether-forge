@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { cancelRun, decideRun, fetchAuditBundle, fetchRun, retryFailedRun, type Run } from "../../../lib/api";
+import {
+  cancelRun,
+  decideRun,
+  fetchAuditBundle,
+  fetchRun,
+  retryFailedRun,
+  type AuditChainReport,
+  type Run,
+} from "../../../lib/api";
 import { useIntervalRefresh } from "../../../lib/useIntervalRefresh";
 
 export default function RunPage({ params }: { params: { id: string } }) {
@@ -10,12 +18,19 @@ export default function RunPage({ params }: { params: { id: string } }) {
   const [busy, setBusy] = useState(false);
   const [live, setLive] = useState(true);
   const [reason, setReason] = useState("");
+  const [chain, setChain] = useState<AuditChainReport | null>(null);
 
   async function load() {
     try {
       const data = await fetchRun(params.id);
       setRun(data.run);
       setError(null);
+      try {
+        const audit = await fetchAuditBundle(params.id);
+        setChain(audit.bundle.chain);
+      } catch {
+        setChain(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -34,7 +49,7 @@ export default function RunPage({ params }: { params: { id: string } }) {
   async function onDecide(decision: "approve" | "reject") {
     setBusy(true);
     try {
-      const data = await decideRun(params.id, decision);
+      const data = await decideRun(params.id, decision, reason || undefined);
       setRun(data.run);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -163,12 +178,19 @@ export default function RunPage({ params }: { params: { id: string } }) {
         </button>
       </p>
       <h2>Audit trail</h2>
+      {chain ? (
+        <p className="muted">
+          chain {chain.ok ? "ok" : `broken${chain.reason ? ` (${chain.reason})` : ""}`} · {chain.eventCount} events
+          {chain.brokenAt != null ? ` · brokenAt ${chain.brokenAt}` : ""}
+        </p>
+      ) : null}
       {run.audit.map((ev) => (
         <div className="event" key={ev.id}>
           <div className="muted">
             {ev.timestamp} · {ev.type}
             {ev.agentId ? ` · ${ev.agentId}` : ""}
             {ev.stepId ? ` · ${ev.stepId}` : ""}
+            {ev.hash ? ` · hash ${ev.hash.slice(0, 12)}…` : ""}
           </div>
           <pre>{JSON.stringify(ev.content, null, 2)}</pre>
         </div>

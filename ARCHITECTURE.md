@@ -242,3 +242,9 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - `verifyAuditChain` is used by export (`bundle.chain`).
 - Pre-Session 26 events without `hash` remain valid to load; they do not participate in the chain.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 27 — Verify audit + dashboard chain
+- CLI `--verify-audit <runId>` prints `{ runId, ok, eventCount, brokenAt?, reason? }` and exits 1 if broken.
+- Dashboard run detail shows `chain.ok` from `GET /runs/:id/audit` and short `hash` prefixes.
+- HITL approve/reject from the UI now include the optional operator reason.
+- Chat-pasted PATs remain unusable for live `wf.github`.

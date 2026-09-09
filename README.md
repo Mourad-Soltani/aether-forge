@@ -38,6 +38,7 @@ npm run start:orchestrator -- --approve <runId>
 npm run start:orchestrator -- --reject <runId>
 npm run start:orchestrator -- --cancel <runId>
 npm run start:orchestrator -- --retry-failed <runId>
+npm run start:orchestrator -- --verify-audit <runId>
 ```
 
 Dry-run connectors (no tokens):

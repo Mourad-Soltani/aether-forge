@@ -78,3 +78,19 @@ test("verifyAuditChain detects tampered content", () => {
   assert.equal(report.ok, false);
   assert.equal(report.reason, "hash mismatch");
 });
+
+test("verifyAuditChain report includes eventCount on success", () => {
+  const run: Run = {
+    id: "run-chain-3",
+    workflowId: "wf.hello",
+    status: "running",
+    startedAt: "2026-09-10T00:00:00.000Z",
+    memory: {},
+    audit: [],
+  };
+  appendAudit(run, { type: "run_start", content: {} });
+  const report = verifyAuditChain(run.audit);
+  assert.equal(report.ok, true);
+  assert.equal(report.eventCount, 1);
+  assert.equal(report.brokenAt, undefined);
+});

@@ -225,6 +225,16 @@ node -e '
 ' "$EXPORT_OUT"
 
 echo
+echo "==> verify audit chain for parallel run"
+VERIFY_OUT="$(npx tsx src/orchestrator.ts --verify-audit "$PAR_ID")"
+node -e '
+  const report = JSON.parse(process.argv[1]);
+  if (report.ok !== true) process.exit(1);
+  if (!report.runId) process.exit(1);
+  console.log("    chain ok events:", report.eventCount);
+' "$VERIFY_OUT"
+
+echo
 echo "==> recent runs"
 run_orch --list 2>/dev/null || true
 

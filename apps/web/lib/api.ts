@@ -49,6 +49,15 @@ export interface AuditEvent {
   stepId?: string;
   type: string;
   content: unknown;
+  prevHash?: string;
+  hash?: string;
+}
+
+export interface AuditChainReport {
+  ok: boolean;
+  eventCount: number;
+  brokenAt?: number;
+  reason?: string;
 }
 
 export interface Run {
@@ -93,9 +102,15 @@ export function fetchRun(id: string) {
 }
 
 export function fetchAuditBundle(id: string) {
-  return request<{ bundle: { format: string; exportedAt: string; run: unknown; events: AuditEvent[] } }>(
-    `/runs/${id}/audit`,
-  );
+  return request<{
+    bundle: {
+      format: string;
+      exportedAt: string;
+      run: unknown;
+      events: AuditEvent[];
+      chain: AuditChainReport;
+    };
+  }>(`/runs/${id}/audit`);
 }
 
 export function startRun(workflowId: string) {

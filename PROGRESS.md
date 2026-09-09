@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 26 — 2026-09-09)
+## Current Status (Session 27 — 2026-09-10)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -44,6 +44,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 24 — exponential backoff + jitter on step retry (`wf.retry.exp`)
 - [x] Session 25 — optional operator `reason` on approve / reject / cancel
 - [x] Session 26 — SHA-256 hash chain on audit events (`prevHash` + `hash`, export `chain`)
+- [x] Session 27 — `--verify-audit` CLI + dashboard chain badge; dashboard now sends HITL `reason`
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -95,9 +96,11 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 23: failed runs can resume from the first incomplete wave via `completedStepIds`. Cancelled runs stay terminal (use a new run). Chat-pasted PATs remain unusable for live `wf.github`.
 - Session 24: step retry may use `strategy: exponential` and `jitter` in [0,1]. Default remains linear / no jitter so existing demos stay deterministic.
 - Session 25: HITL decisions may include a short operator `reason` (max 500) on the audit event. Empty reason is omitted.
+- Session 26: audit events are SHA-256 chained; export reports `chain.ok`.
+- Session 27: `--verify-audit` prints the chain report and exits 1 when broken. Dashboard shows chain status + hash prefixes. Approve/reject from the UI now forward the optional reason.
 
 ## Handoff for next session
-Session 26 ships SHA-256 hash chaining on audit events plus chain.ok on aether-audit-v1 export. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 27 ships `--verify-audit` and dashboard chain visibility. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -130,6 +133,7 @@ npm run dev:web
 # npm run start:orchestrator -- --workflow timeout-ok
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>
+# npm run start:orchestrator -- --verify-audit <runId>
 ```
 
 API:
@@ -198,3 +202,10 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - `verifyAuditChain` reports tamper (`hash mismatch` / `prevHash mismatch`). Events without `hash` (pre-Session 26 files) are skipped so old runs still export.
 - `aether-audit-v1` header includes `chain: { ok, eventCount }`.
 - Hashing is integrity evidence, not a secret store. Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Decisions (Session 27)
+- `--verify-audit <runId>` is a read-only operator check. It does not mutate the run.
+- Exit code 1 when `chain.ok` is false so scripts can gate on integrity.
+- Dashboard reads `bundle.chain` from `GET /runs/:id/audit` and shows short hash prefixes; it does not recompute hashes in the browser.
+- Approve/reject buttons now pass the textarea `reason` (cancel already did).
+- Chat-pasted PATs remain unusable for live `wf.github`.
