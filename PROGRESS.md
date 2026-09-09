@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 25 — 2026-09-09)
+## Current Status (Session 26 — 2026-09-09)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -43,6 +43,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 23 — retry failed runs from `completedStepIds` (CLI `--retry-failed`, `POST /runs/:id/retry`, dashboard).
 - [x] Session 24 — exponential backoff + jitter on step retry (`wf.retry.exp`)
 - [x] Session 25 — optional operator `reason` on approve / reject / cancel
+- [x] Session 26 — SHA-256 hash chain on audit events (`prevHash` + `hash`, export `chain`)
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -96,7 +97,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 25: HITL decisions may include a short operator `reason` (max 500) on the audit event. Empty reason is omitted.
 
 ## Handoff for next session
-Session 25 ships optional decision notes on approve/reject/cancel. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 26 ships SHA-256 hash chaining on audit events plus chain.ok on aether-audit-v1 export. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -190,3 +191,10 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Normalization lives in `src/decision.ts` (trim, collapse whitespace, drop controls, cap 500).
 - Omitted when empty so existing tests and exporters keep working.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Decisions (Session 26)
+- New audit events carry `prevHash` + SHA-256 `hash` over a canonical body (id, timestamp, runId, agentId, stepId, type, content, prevHash).
+- First event links to a 64-zero genesis hash.
+- `verifyAuditChain` reports tamper (`hash mismatch` / `prevHash mismatch`). Events without `hash` (pre-Session 26 files) are skipped so old runs still export.
+- `aether-audit-v1` header includes `chain: { ok, eventCount }`.
+- Hashing is integrity evidence, not a secret store. Chat-pasted PATs remain unusable for live `wf.github`.

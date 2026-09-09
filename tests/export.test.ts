@@ -30,6 +30,8 @@ test("buildAuditBundle omits raw memory values", () => {
   assert.deepEqual(bundle.run.memoryKeys, ["brief"]);
   assert.equal(bundle.events.length, 2);
   assert.ok(!("memory" in bundle.run));
+  assert.equal(bundle.chain.ok, true);
+  assert.equal(bundle.chain.eventCount, 2);
 });
 
 test("JSONL export is parseable and already redacted", () => {
@@ -43,4 +45,5 @@ test("JSONL export is parseable and already redacted", () => {
   assert.doesNotMatch(text, /github_pat_/);
   assert.match(text, /\[redacted-pat\]/);
   assert.match(text, /"token":"\[redacted\]"/);
+  assert.match(text, /"chain":\{"ok":true/);
 });

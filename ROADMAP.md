@@ -11,6 +11,7 @@
 - [x] Retry a failed run from completed waves
 - [x] Exponential backoff + optional jitter on step retries
 - [x] Optional operator reason on approve / reject / cancel
+- [x] Hash-chained audit events (SHA-256 prevHash)
 
 ## Next
 

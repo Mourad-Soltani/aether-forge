@@ -235,3 +235,10 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Stored only on the `decision` audit event (`content.reason`). Omitted when empty so prior payloads stay compatible.
 - CLI `--reason`, API JSON body `{ "reason" }`, dashboard textarea.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 26 — Audit hash chain
+- `appendAudit` writes `prevHash` + SHA-256 `hash`.
+- Genesis prevHash is 64 zero hex digits.
+- `verifyAuditChain` is used by export (`bundle.chain`).
+- Pre-Session 26 events without `hash` remain valid to load; they do not participate in the chain.
+- Chat-pasted PATs remain unusable for live `wf.github`.

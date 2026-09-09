@@ -22,6 +22,10 @@ export const AuditEventSchema = z.object({
     "run_end",
   ]),
   content: z.any(),
+  /** SHA-256 hex of the previous event hash (GENESIS for the first event). */
+  prevHash: z.string().optional(),
+  /** SHA-256 hex over the canonical event body including prevHash. */
+  hash: z.string().optional(),
 });
 
 export type ToolCall = z.infer<typeof ToolCallSchema>;

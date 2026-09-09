@@ -220,6 +220,7 @@ node -e '
   const header = JSON.parse(lines[0]);
   if (header.format !== "aether-audit-v1") process.exit(1);
   if (header.eventCount !== lines.length - 1) process.exit(1);
+  if (!header.chain || header.chain.ok !== true) process.exit(1);
   console.log("    events:", header.eventCount);
 ' "$EXPORT_OUT"
 

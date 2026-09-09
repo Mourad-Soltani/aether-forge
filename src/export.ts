@@ -1,4 +1,5 @@
 import type { AuditEvent, Run } from "./types.js";
+import { verifyAuditChain, type AuditChainReport } from "./audit.js";
 
 export interface AuditBundle {
   format: "aether-audit-v1";
@@ -16,9 +17,11 @@ export interface AuditBundle {
     completedStepIds: string[];
   };
   events: AuditEvent[];
+  chain: AuditChainReport;
 }
 
 export function buildAuditBundle(run: Run, exportedAt = new Date().toISOString()): AuditBundle {
+  const events = run.audit ?? [];
   return {
     format: "aether-audit-v1",
     exportedAt,
@@ -34,7 +37,8 @@ export function buildAuditBundle(run: Run, exportedAt = new Date().toISOString()
       approvedStepIds: run.approvedStepIds ?? [],
       completedStepIds: run.completedStepIds ?? [],
     },
-    events: run.audit ?? [],
+    events,
+    chain: verifyAuditChain(events),
   };
 }
 
@@ -45,6 +49,7 @@ export function auditBundleToJsonl(bundle: AuditBundle): string {
     exportedAt: bundle.exportedAt,
     run: bundle.run,
     eventCount: bundle.events.length,
+    chain: bundle.chain,
   };
   const lines = [JSON.stringify(header), ...bundle.events.map((e) => JSON.stringify(e))];
   return lines.join("\n") + "\n";

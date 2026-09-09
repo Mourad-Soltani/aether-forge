@@ -44,3 +44,37 @@ test("appendAudit stores sanitized content on the run", () => {
   assert.match(content.message, /\[redacted-pat\]/);
   assert.doesNotMatch(content.message, /github_pat_/);
 });
+
+import { AUDIT_GENESIS, verifyAuditChain } from "../src/audit.js";
+
+test("appendAudit hashes a genesis-linked chain", () => {
+  const run: Run = {
+    id: "run-chain-1",
+    workflowId: "wf.hello",
+    status: "running",
+    startedAt: "2026-09-09T00:00:00.000Z",
+    memory: {},
+    audit: [],
+  };
+  appendAudit(run, { type: "run_start", content: { workflowId: "wf.hello" } });
+  appendAudit(run, { type: "run_end", content: { status: "completed" } });
+  assert.equal(run.audit[0].prevHash, AUDIT_GENESIS);
+  assert.equal(run.audit[1].prevHash, run.audit[0].hash);
+  assert.equal(verifyAuditChain(run.audit).ok, true);
+});
+
+test("verifyAuditChain detects tampered content", () => {
+  const run: Run = {
+    id: "run-chain-2",
+    workflowId: "wf.hello",
+    status: "running",
+    startedAt: "2026-09-09T00:00:00.000Z",
+    memory: {},
+    audit: [],
+  };
+  appendAudit(run, { type: "decision", content: { decision: "approve" } });
+  run.audit[0] = { ...run.audit[0], content: { decision: "reject" } };
+  const report = verifyAuditChain(run.audit);
+  assert.equal(report.ok, false);
+  assert.equal(report.reason, "hash mismatch");
+});
