@@ -39,6 +39,7 @@ export interface RunSummary {
   pausedStepId?: string;
   auditCount: number;
   error?: string;
+  chainOk?: boolean;
 }
 
 export interface AuditEvent {

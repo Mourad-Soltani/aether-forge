@@ -1,6 +1,7 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Run } from "./types.js";
+import { verifyAuditChain } from "./audit.js";
 
 export const RUNS_DIR = path.resolve(process.cwd(), "data", "runs");
 
@@ -43,6 +44,7 @@ export interface RunSummary {
   pausedStepId?: string;
   auditCount: number;
   error?: string;
+  chainOk: boolean;
 }
 
 export async function listRunSummaries(): Promise<RunSummary[]> {
@@ -60,6 +62,7 @@ export async function listRunSummaries(): Promise<RunSummary[]> {
         pausedStepId: run.pausedStepId,
         auditCount: run.audit?.length ?? 0,
         error: run.error,
+        chainOk: verifyAuditChain(run.audit).ok,
       });
     } catch {
       // skip unreadable files

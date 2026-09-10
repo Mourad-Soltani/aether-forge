@@ -248,3 +248,8 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Dashboard run detail shows `chain.ok` from `GET /runs/:id/audit` and short `hash` prefixes.
 - HITL approve/reject from the UI now include the optional operator reason.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 28 — chainOk on summaries
+- `summarizeRun` and `listRunSummaries` expose `chainOk`.
+- Dashboard list shows chain status; detail page still uses the full export bundle.
+- Chat-pasted PATs remain unusable for live `wf.github`.

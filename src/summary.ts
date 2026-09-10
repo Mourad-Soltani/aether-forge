@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Run } from "./types.js";
+import { verifyAuditChain } from "./audit.js";
 
 export const RunSummarySchema = z.object({
   ok: z.boolean(),
@@ -18,6 +19,7 @@ export const RunSummarySchema = z.object({
   memoryKeys: z.array(z.string()),
   error: z.string().nullable(),
   persisted: z.string().optional(),
+  chainOk: z.boolean(),
 });
 
 export type RunSummary = z.infer<typeof RunSummarySchema>;
@@ -32,6 +34,7 @@ export function summarizeRun(run: Run, persisted?: string): RunSummary {
     auditEvents: run.audit.length,
     memoryKeys: Object.keys(run.memory),
     error: run.error ?? null,
+    chainOk: verifyAuditChain(run.audit).ok,
     ...(persisted ? { persisted } : {}),
   });
 }

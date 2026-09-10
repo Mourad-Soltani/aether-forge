@@ -42,6 +42,7 @@ test("summarizeRun: completed is ok and omits persisted when unset", () => {
   assert.deepEqual(summary.memoryKeys, ["brief"]);
   assert.equal(summary.error, null);
   assert.equal(summary.persisted, undefined);
+  assert.equal(summary.chainOk, true);
 });
 
 test("summarizeRun: failed is not ok and keeps error", () => {
@@ -90,4 +91,23 @@ test("parseRunSummaryFromStdout: throws when no contract object", () => {
     () => parseRunSummaryFromStdout("hello\n{not json\n"),
     /no JSON RunSummary/,
   );
+});
+
+test("summarizeRun: chainOk is false when an event hash is tampered", () => {
+  const summary = summarizeRun(
+    run({
+      status: "completed",
+      audit: [
+        {
+          id: "1",
+          timestamp: "t",
+          type: "run_start",
+          content: { n: 1 },
+          prevHash: "0".repeat(64),
+          hash: "deadbeef",
+        },
+      ],
+    }),
+  );
+  assert.equal(summary.chainOk, false);
 });

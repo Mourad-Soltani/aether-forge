@@ -205,6 +205,7 @@ export default function HomePage() {
             <th>Workflow</th>
             <th>Status</th>
             <th>Audit</th>
+            <th>Chain</th>
             <th></th>
           </tr>
         </thead>
@@ -222,6 +223,9 @@ export default function HomePage() {
                 <td>{r.workflowId}</td>
                 <td>{badge(r.status)}</td>
                 <td>{r.auditCount}</td>
+                <td className={r.chainOk === false ? "muted" : undefined}>
+                  {r.chainOk === false ? "broken" : r.chainOk === true ? "ok" : "—"}
+                </td>
                 <td>
                   <a href={`/runs/${r.id}`}>open</a>
                   {r.status === "awaiting_approval" ? (

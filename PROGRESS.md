@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 27 — 2026-09-10)
+## Current Status (Session 28 — 2026-09-10)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -45,6 +45,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 25 — optional operator `reason` on approve / reject / cancel
 - [x] Session 26 — SHA-256 hash chain on audit events (`prevHash` + `hash`, export `chain`)
 - [x] Session 27 — `--verify-audit` CLI + dashboard chain badge; dashboard now sends HITL `reason`
+- [x] Session 28 — `chainOk` on `RunSummary` + persist list + dashboard list column
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -98,9 +99,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 25: HITL decisions may include a short operator `reason` (max 500) on the audit event. Empty reason is omitted.
 - Session 26: audit events are SHA-256 chained; export reports `chain.ok`.
 - Session 27: `--verify-audit` prints the chain report and exits 1 when broken. Dashboard shows chain status + hash prefixes. Approve/reject from the UI now forward the optional reason.
+- Session 28: `summarizeRun` and `listRunSummaries` include `chainOk` from `verifyAuditChain`. List page shows ok/broken without opening the run.
 
 ## Handoff for next session
-Session 27 ships `--verify-audit` and dashboard chain visibility. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 28 ships `chainOk` on run summaries (CLI `--json`, API list, dashboard table). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -208,4 +210,10 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Exit code 1 when `chain.ok` is false so scripts can gate on integrity.
 - Dashboard reads `bundle.chain` from `GET /runs/:id/audit` and shows short hash prefixes; it does not recompute hashes in the browser.
 - Approve/reject buttons now pass the textarea `reason` (cancel already did).
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Decisions (Session 28)
+- `RunSummary.chainOk` is computed server-side via `verifyAuditChain`.
+- List API (`listRunSummaries`) includes the same flag so the dashboard does not download every audit bundle.
+- Pre-Session 26 events without hashes still report `chainOk: true` (legacy skip rule unchanged).
 - Chat-pasted PATs remain unusable for live `wf.github`.

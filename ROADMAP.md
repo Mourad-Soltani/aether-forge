@@ -12,6 +12,8 @@
 - [x] Exponential backoff + optional jitter on step retries
 - [x] Optional operator reason on approve / reject / cancel
 - [x] Hash-chained audit events (SHA-256 prevHash)
+- [x] `--verify-audit` + dashboard chain badge
+- [x] `chainOk` on run summaries / list view
 - [x] Operator verify of audit chain (`--verify-audit` + dashboard badge)
 
 ## Next
