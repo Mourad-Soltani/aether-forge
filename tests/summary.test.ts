@@ -64,6 +64,14 @@ test("summarizeRun: cancelled is ok (operator abort is not failure)", () => {
   assert.equal(summary.status, "cancelled");
 });
 
+test("summarizeRun: expired is ok (policy window, not engine failure)", () => {
+  const summary = summarizeRun(
+    run({ status: "expired", error: "Approval expired at step create-ticket" }),
+  );
+  assert.equal(summary.ok, true);
+  assert.equal(summary.status, "expired");
+});
+
 test("summarizeRun: awaiting_approval is ok (pause is not failure)", () => {
   const summary = summarizeRun(
     run({ status: "awaiting_approval", pausedStepId: "create-ticket" }),

@@ -1,5 +1,5 @@
 import type { Agent, Workflow } from "../types.js";
-import { helloAgents, helloWorkflow, hitlWorkflow } from "./hello.js";
+import { helloAgents, helloWorkflow, hitlWorkflow, hitlTtlWorkflow } from "./hello.js";
 import { httpDemoAgents, httpDemoWorkflow } from "./http-demo.js";
 import { githubDemoAgents, githubDemoWorkflow } from "./github-demo.js";
 import { slackDemoAgents, slackDemoWorkflow } from "./slack-demo.js";
@@ -20,6 +20,8 @@ export const workflowRegistry: Record<string, RegisteredWorkflow> = {
   hello: { workflow: helloWorkflow, agents: helloAgents },
   [hitlWorkflow.id]: { workflow: hitlWorkflow, agents: helloAgents },
   hitl: { workflow: hitlWorkflow, agents: helloAgents },
+  [hitlTtlWorkflow.id]: { workflow: hitlTtlWorkflow, agents: helloAgents },
+  "hitl-ttl": { workflow: hitlTtlWorkflow, agents: helloAgents },
   [httpDemoWorkflow.id]: { workflow: httpDemoWorkflow, agents: httpDemoAgents },
   http: { workflow: httpDemoWorkflow, agents: httpDemoAgents },
   [githubDemoWorkflow.id]: { workflow: githubDemoWorkflow, agents: githubDemoAgents },

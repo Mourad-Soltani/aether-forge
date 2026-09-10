@@ -37,7 +37,8 @@ export type RunStatus =
   | "awaiting_approval"
   | "completed"
   | "failed"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export interface ToolContext {
   runId: string;
@@ -91,6 +92,8 @@ export interface Workflow {
   steps: Step[];
   /** If true, skip HITL pause for irreversible tools (demos / CI). */
   autoApprove?: boolean;
+  /** Max time a HITL pause may stay open. Omit = no expiry. */
+  approvalTtlMs?: number;
 }
 
 export interface Run {
@@ -104,6 +107,8 @@ export interface Run {
   error?: string;
   /** Step that triggered HITL pause. */
   pausedStepId?: string;
+  /** ISO timestamp when the current HITL pause began. */
+  pausedAt?: string;
   /** Steps already approved for this run. */
   approvedStepIds?: string[];
   /** Steps whose waves finished successfully. Used by retryFailedRun. */

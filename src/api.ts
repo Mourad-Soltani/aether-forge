@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { configuredApiToken, isAuthorized } from "./auth.js";
 import { buildAuditBundle } from "./export.js";
-import { cancelRun, executeWorkflow, resumeRun, retryFailedRun } from "./orchestrator.js";
+import { cancelRun, executeWorkflow, expireRun, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
 
@@ -129,6 +129,13 @@ export async function handleRequest(
     const retryMatch = pathname.match(/^\/runs\/([^/]+)\/retry$/);
     if (method === "POST" && retryMatch) {
       const run = await retryFailedRun(retryMatch[1]);
+      json(res, 200, { run });
+      return;
+    }
+
+    const expireMatch = pathname.match(/^\/runs\/([^/]+)\/expire$/);
+    if (method === "POST" && expireMatch) {
+      const run = await expireRun(expireMatch[1]);
       json(res, 200, { run });
       return;
     }

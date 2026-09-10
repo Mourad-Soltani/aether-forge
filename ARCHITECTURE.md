@@ -35,7 +35,7 @@ Tools receive a `ToolContext` with `runId`, `agentId`, `memory`, and `audit`.
 2. Create a `Run` with status `running` and empty memory + audit.
 3. For each step:
    - resolve the agent and tool
-   - if tool is irreversible and `autoApprove` is false and step is not in `approvedStepIds` → emit `human_input`, set `pausedStepId`, persist, return `awaiting_approval` (not failed)
+   - if tool is irreversible and `autoApprove` is false and step is not in `approvedStepIds` → emit `human_input`, set `pausedStepId` + `pausedAt`, persist, return `awaiting_approval` (not failed)
    - validate args with Zod
    - execute tool
    - write `tool_call` + `tool_result` (or `error`) audit events
@@ -43,10 +43,11 @@ Tools receive a `ToolContext` with `runId`, `agentId`, `memory`, and `audit`.
 4. Mark run `completed` or `failed`.
 5. Persist run to `data/runs/<runId>.json`.
 
-Resume (`--approve` / `--reject` / `--cancel` / `--retry-failed` or `POST /runs/:id/approve|reject|cancel|retry`):
+Resume (`--approve` / `--reject` / `--cancel` / `--retry-failed` / `--expire` or `POST /runs/:id/approve|reject|cancel|retry|expire`):
 - reject → `decision` audit + `failed`
 - cancel → `decision` audit + `cancelled` (operator abort; not a tool failure)
-- approve → append step to `approvedStepIds`, continue from `pausedStepId`
+- expire → `decision` audit + `expired` when `approvalTtlMs` elapsed
+- approve → append step to `approvedStepIds`, continue from `pausedStepId` (refuses if TTL elapsed)
 - retry-failed → only `failed` runs; continue from first wave not in `completedStepIds`
 
 Parallel steps: consecutive `mode: "parallel"` steps form a wave executed with `Promise.all`. HITL is checked for the whole wave before any tool in the wave runs. Distinct `writeTo` keys required inside a wave.
@@ -252,4 +253,11 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 ## Session 28 — chainOk on summaries
 - `summarizeRun` and `listRunSummaries` expose `chainOk`.
 - Dashboard list shows chain status; detail page still uses the full export bundle.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 29 — HITL approval TTL
+- Optional `Workflow.approvalTtlMs` (positive, capped at 24h). Omitted = pause stays open until approve / reject / cancel.
+- Pause writes `Run.pausedAt`. `expireRun` / approve / reject / cancel apply expiry first.
+- New terminal status `expired` (policy window, not engine failure). `RunSummary.ok` stays true.
+- CLI `--expire`, API `POST /runs/:id/expire`. Test workflow `wf.hitl.ttl` (`hitl-ttl`) is not in `demo.sh`.
 - Chat-pasted PATs remain unusable for live `wf.github`.

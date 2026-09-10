@@ -24,6 +24,7 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: upp
 .s-completed { background: #143326; color: var(--ok); }
 .s-failed { background: #3a1515; color: var(--bad); }
 .s-cancelled { background: #2a2433; color: #c4b5d6; }
+.s-expired { background: #332818; color: #e0c48a; }
 .s-awaiting_approval { background: #3a3010; color: var(--warn); }
 .s-running, .s-pending { background: #1b2744; color: var(--accent); }
 .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }

@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 28 — 2026-09-10)
+## Current Status (Session 29 — 2026-09-11)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -46,6 +46,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 26 — SHA-256 hash chain on audit events (`prevHash` + `hash`, export `chain`)
 - [x] Session 27 — `--verify-audit` CLI + dashboard chain badge; dashboard now sends HITL `reason`
 - [x] Session 28 — `chainOk` on `RunSummary` + persist list + dashboard list column
+- [x] Session 29 — HITL approval TTL (`approvalTtlMs`, `expired` status, `--expire`, `POST /runs/:id/expire`)
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -100,9 +101,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 26: audit events are SHA-256 chained; export reports `chain.ok`.
 - Session 27: `--verify-audit` prints the chain report and exits 1 when broken. Dashboard shows chain status + hash prefixes. Approve/reject from the UI now forward the optional reason.
 - Session 28: `summarizeRun` and `listRunSummaries` include `chainOk` from `verifyAuditChain`. List page shows ok/broken without opening the run.
+- Session 29: workflows may set `approvalTtlMs`. Paused runs record `pausedAt`. After the window, `--expire` / approve / reject / cancel close the run as `expired` (not failed). Default HITL workflows have no TTL. `wf.hitl.ttl` is test-only (1ms).
 
 ## Handoff for next session
-Session 28 ships `chainOk` on run summaries (CLI `--json`, API list, dashboard table). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 29 ships HITL approval expiry. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -136,6 +138,7 @@ npm run dev:web
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>
 # npm run start:orchestrator -- --verify-audit <runId>
+# npm run start:orchestrator -- --expire <runId>
 ```
 
 API:
@@ -149,6 +152,7 @@ API:
 - `POST /runs/:id/reject` body `{ "reason"?: string }`
 - `POST /runs/:id/cancel` body `{ "reason"?: string }`
 - `POST /runs/:id/retry` (failed runs only)
+- `POST /runs/:id/expire` (paused runs whose approvalTtlMs elapsed)
 
 Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`.
 

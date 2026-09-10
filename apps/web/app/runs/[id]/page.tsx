@@ -42,7 +42,12 @@ export default function RunPage({ params }: { params: { id: string } }) {
 
   useIntervalRefresh(
     load,
-    live && !!run && run.status !== "completed" && run.status !== "failed" && run.status !== "cancelled",
+    live &&
+      !!run &&
+      run.status !== "completed" &&
+      run.status !== "failed" &&
+      run.status !== "cancelled" &&
+      run.status !== "expired",
     5000,
   );
 

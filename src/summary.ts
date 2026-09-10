@@ -11,6 +11,7 @@ export const RunSummarySchema = z.object({
     "completed",
     "failed",
     "cancelled",
+    "expired",
   ]),
   id: z.string().min(1),
   workflowId: z.string().min(1),

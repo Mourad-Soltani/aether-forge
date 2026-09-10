@@ -28,7 +28,8 @@ export type RunStatus =
   | "awaiting_approval"
   | "completed"
   | "failed"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 
 export interface RunSummary {
   id: string;

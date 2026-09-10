@@ -81,3 +81,12 @@ export const hitlWorkflow: Workflow = {
   description: "Same as hello-workflow but pauses on create_ticket_stub",
   autoApprove: false,
 };
+
+/** Same HITL graph with a 1ms approval window for expiry tests. */
+export const hitlTtlWorkflow: Workflow = {
+  ...hitlWorkflow,
+  id: "wf.hitl.ttl",
+  name: "Hello workforce (HITL TTL)",
+  description: "HITL pause with approvalTtlMs=1 for expiry tests",
+  approvalTtlMs: 1,
+};

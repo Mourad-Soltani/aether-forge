@@ -21,6 +21,7 @@ const STATUSES: Array<RunStatus | "all"> = [
   "completed",
   "failed",
   "cancelled",
+  "expired",
 ];
 
 function badge(status: string) {

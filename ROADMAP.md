@@ -15,6 +15,7 @@
 - [x] `--verify-audit` + dashboard chain badge
 - [x] `chainOk` on run summaries / list view
 - [x] Operator verify of audit chain (`--verify-audit` + dashboard badge)
+- [x] HITL approval TTL / `expired` status
 
 ## Next
 

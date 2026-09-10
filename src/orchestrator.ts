@@ -7,6 +7,7 @@ import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
 import { resolveStepRetry, computeBackoffMs, sleep } from "./retry.js";
 import { normalizeDecisionReason } from "./decision.js";
 import { resolveStepTimeoutMs, runWithTimeout } from "./timeout.js";
+import { isApprovalExpired } from "./expiry.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
 export type { RunSummary };
@@ -122,6 +123,7 @@ export async function executeWorkflow(
     run.status = "completed";
     run.finishedAt = new Date().toISOString();
     delete run.pausedStepId;
+    delete run.pausedAt;
     appendAudit(run, {
       type: "run_end",
       content: { status: run.status },
@@ -177,6 +179,7 @@ async function executeWave(
     if (tool.irreversible && !workflow.autoApprove && !alreadyApproved) {
       run.status = "awaiting_approval";
       run.pausedStepId = step.id;
+      run.pausedAt = new Date().toISOString();
       appendAudit(run, {
         type: "human_input",
         agentId: agent.id,
@@ -296,6 +299,49 @@ async function executeWave(
   return "ok";
 }
 
+function markExpired(run: Run, ttlMs: number): Run {
+  run.status = "expired";
+  run.finishedAt = new Date().toISOString();
+  run.error = `Approval expired at step ${run.pausedStepId}`;
+  appendAudit(run, {
+    type: "decision",
+    stepId: run.pausedStepId,
+    content: {
+      decision: "expire",
+      stepId: run.pausedStepId,
+      ttlMs,
+    },
+  });
+  appendAudit(run, { type: "run_end", content: { status: run.status } });
+  return run;
+}
+
+async function expireIfStale(run: Run): Promise<Run | null> {
+  const { workflow } = resolveWorkflow(run.workflowId);
+  if (!isApprovalExpired(run, workflow)) return null;
+  markExpired(run, workflow.approvalTtlMs ?? 0);
+  const file = await saveRun(run);
+  emitSummary(run, file);
+  humanLog(`Run expired: ${run.id}`);
+  humanLog(`Persisted: ${file}`);
+  return run;
+}
+
+/** Close a paused run whose approvalTtlMs has elapsed. */
+export async function expireRun(runId: string): Promise<Run> {
+  const run = await loadRun(runId);
+  if (run.status !== "awaiting_approval") {
+    throw new Error(
+      `Run ${runId} is ${run.status}, expected awaiting_approval`,
+    );
+  }
+  const expired = await expireIfStale(run);
+  if (!expired) {
+    throw new Error(`Run ${runId} approval window is still open`);
+  }
+  return expired;
+}
+
 export async function resumeRun(
   runId: string,
   decision: "approve" | "reject",
@@ -306,6 +352,10 @@ export async function resumeRun(
     throw new Error(
       `Run ${runId} is ${run.status}, expected awaiting_approval`,
     );
+  }
+  const stale = await expireIfStale(run);
+  if (stale) {
+    throw new Error(`Run ${runId} is expired, expected awaiting_approval`);
   }
   const note = normalizeDecisionReason(reason);
   const { workflow, agents } = resolveWorkflow(run.workflowId);
@@ -353,6 +403,10 @@ export async function cancelRun(runId: string, reason?: string): Promise<Run> {
     throw new Error(
       `Run ${runId} is ${run.status}, expected awaiting_approval`,
     );
+  }
+  const stale = await expireIfStale(run);
+  if (stale) {
+    throw new Error(`Run ${runId} is expired, expected awaiting_approval`);
   }
   const note = normalizeDecisionReason(reason);
   run.status = "cancelled";
@@ -406,11 +460,13 @@ Usage:
   npm run start:orchestrator -- --retry-failed <runId>
   npm run start:orchestrator -- --export-audit <runId>
   npm run start:orchestrator -- --verify-audit <runId>
+  npm run start:orchestrator -- --expire <runId>
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
 --export-audit prints aether-audit-v1 JSONL (header + events) to stdout.
 --verify-audit prints the hash-chain report JSON and exits 1 if chain.ok is false.
+--expire closes a paused run when workflow.approvalTtlMs has elapsed.
 `);
 }
 
@@ -453,6 +509,13 @@ async function main() {
     const report = verifyAuditChain(run.audit);
     process.stdout.write(JSON.stringify({ runId: run.id, ...report }) + "\n");
     if (!report.ok) process.exitCode = 1;
+    return;
+  }
+  const expireIdx = argv.indexOf("--expire");
+  if (expireIdx >= 0) {
+    const id = argv[expireIdx + 1];
+    if (!id) throw new Error("--expire requires a run id");
+    await expireRun(id);
     return;
   }
   const approveIdx = argv.indexOf("--approve");
