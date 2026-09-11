@@ -5,6 +5,7 @@ import { isApprovalExpired, resolveApprovalTtlMs } from "../src/expiry.js";
 import {
   executeWorkflow,
   expireRun,
+  expireStaleRuns,
   resumeRun,
 } from "../src/orchestrator.js";
 import { summarizeRun } from "../src/summary.js";
@@ -88,4 +89,27 @@ test("expireRun: default HITL without TTL stays open", async () => {
   const paused = await executeWorkflow(workflow, agents);
   await assert.rejects(() => expireRun(paused.id), /still open/);
   assert.equal(paused.status, "awaiting_approval");
+});
+
+test("pause stamps approvalExpiresAt when workflow has TTL", async () => {
+  const { workflow, agents } = resolveWorkflow("hitl-ttl");
+  const paused = await executeWorkflow(workflow, agents);
+  assert.equal(paused.status, "awaiting_approval");
+  assert.ok(paused.approvalExpiresAt);
+  assert.ok(Date.parse(paused.approvalExpiresAt) >= Date.parse(paused.pausedAt ?? ""));
+});
+
+test("expireStaleRuns closes only TTL-elapsed pauses", async () => {
+  const ttl = resolveWorkflow("hitl-ttl");
+  const open = resolveWorkflow("hitl");
+  const stale = await executeWorkflow(ttl.workflow, ttl.agents);
+  const keep = await executeWorkflow(open.workflow, open.agents);
+  await delay(5);
+  const closed = await expireStaleRuns();
+  const ids = closed.map((r) => r.id);
+  assert.ok(ids.includes(stale.id));
+  assert.ok(!ids.includes(keep.id));
+  const { loadRun } = await import("../src/persist.js");
+  assert.equal((await loadRun(stale.id)).status, "expired");
+  assert.equal((await loadRun(keep.id)).status, "awaiting_approval");
 });

@@ -42,10 +42,10 @@ export interface RunSummary {
   startedAt: string;
   finishedAt?: string;
   pausedStepId?: string;
-  pausedAt?: string;
   auditCount: number;
   error?: string;
   chainOk: boolean;
+  approvalExpiresAt?: string;
 }
 
 export async function listRunSummaries(): Promise<RunSummary[]> {
@@ -61,10 +61,10 @@ export async function listRunSummaries(): Promise<RunSummary[]> {
         startedAt: run.startedAt,
         finishedAt: run.finishedAt,
         pausedStepId: run.pausedStepId,
-        pausedAt: run.pausedAt,
         auditCount: run.audit?.length ?? 0,
         error: run.error,
         chainOk: verifyAuditChain(run.audit).ok,
+        approvalExpiresAt: run.approvalExpiresAt,
       });
     } catch {
       // skip unreadable files

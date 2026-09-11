@@ -262,8 +262,11 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - CLI `--expire`, API `POST /runs/:id/expire`. Test workflow `wf.hitl.ttl` (`hitl-ttl`) is not in `demo.sh`.
 - Chat-pasted PATs remain unusable for live `wf.github`.
 
-## Session 30 — Dashboard expire
-- Run detail shows `pausedAt` and an Expire button that calls `POST /runs/:id/expire`.
-- `listRunSummaries` includes `pausedAt` so operators can see when the pause started without opening the run.
-- Expire still requires the workflow TTL window to have elapsed; default HITL workflows have no TTL.
+## Session 30 — Stale approval sweep
+- Pause stamps `Run.approvalExpiresAt` when the workflow has `approvalTtlMs`.
+- `expireStaleRuns` walks persisted runs and expires those past TTL.
+- CLI `--expire-stale`; API `POST /runs/expire-stale`.
+- GET `/runs` and GET `/runs/:id` lazily sweep so operators do not have to poll expire.
+- Dashboard lists `approvalExpiresAt`, Expire stale, and Expire if stale on the detail page.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+

@@ -7,7 +7,7 @@ import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
 import { resolveStepRetry, computeBackoffMs, sleep } from "./retry.js";
 import { normalizeDecisionReason } from "./decision.js";
 import { resolveStepTimeoutMs, runWithTimeout } from "./timeout.js";
-import { isApprovalExpired } from "./expiry.js";
+import { computeApprovalExpiresAt, isApprovalExpired, resolveApprovalTtlMs } from "./expiry.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 
 export type { RunSummary };
@@ -124,6 +124,7 @@ export async function executeWorkflow(
     run.finishedAt = new Date().toISOString();
     delete run.pausedStepId;
     delete run.pausedAt;
+    delete run.approvalExpiresAt;
     appendAudit(run, {
       type: "run_end",
       content: { status: run.status },
@@ -180,6 +181,12 @@ async function executeWave(
       run.status = "awaiting_approval";
       run.pausedStepId = step.id;
       run.pausedAt = new Date().toISOString();
+      const ttl = resolveApprovalTtlMs(workflow);
+      if (ttl !== undefined) {
+        run.approvalExpiresAt = computeApprovalExpiresAt(run.pausedAt, ttl);
+      } else {
+        delete run.approvalExpiresAt;
+      }
       appendAudit(run, {
         type: "human_input",
         agentId: agent.id,
@@ -342,6 +349,24 @@ export async function expireRun(runId: string): Promise<Run> {
   return expired;
 }
 
+/** Close every paused run whose approval TTL has elapsed. */
+export async function expireStaleRuns(): Promise<Run[]> {
+  const ids = await listRuns();
+  const closed: Run[] = [];
+  for (const id of ids) {
+    let run: Run;
+    try {
+      run = await loadRun(id);
+    } catch {
+      continue;
+    }
+    if (run.status !== "awaiting_approval") continue;
+    const expired = await expireIfStale(run);
+    if (expired) closed.push(expired);
+  }
+  return closed;
+}
+
 export async function resumeRun(
   runId: string,
   decision: "approve" | "reject",
@@ -461,12 +486,14 @@ Usage:
   npm run start:orchestrator -- --export-audit <runId>
   npm run start:orchestrator -- --verify-audit <runId>
   npm run start:orchestrator -- --expire <runId>
+  npm run start:orchestrator -- --expire-stale
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
 --export-audit prints aether-audit-v1 JSONL (header + events) to stdout.
 --verify-audit prints the hash-chain report JSON and exits 1 if chain.ok is false.
 --expire closes a paused run when workflow.approvalTtlMs has elapsed.
+--expire-stale sweeps all paused runs and expires those past TTL.
 `);
 }
 
@@ -509,6 +536,16 @@ async function main() {
     const report = verifyAuditChain(run.audit);
     process.stdout.write(JSON.stringify({ runId: run.id, ...report }) + "\n");
     if (!report.ok) process.exitCode = 1;
+    return;
+  }
+  if (argv.includes("--expire-stale")) {
+    const closed = await expireStaleRuns();
+    if (jsonMode) {
+      console.log(JSON.stringify({ ok: true, expired: closed.map((r) => r.id) }));
+      return;
+    }
+    humanLog(closed.length ? `Expired ${closed.length} run(s)` : "No stale approvals");
+    for (const run of closed) humanLog(`  ${run.id}`);
     return;
   }
   const expireIdx = argv.indexOf("--expire");

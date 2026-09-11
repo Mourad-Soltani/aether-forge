@@ -86,10 +86,10 @@ export default function RunPage({ params }: { params: { id: string } }) {
         </label>
       </p>
       {run.pausedStepId ? (
-        <p className="muted">
-          Paused at step {run.pausedStepId}
-          {run.pausedAt ? ` · since ${run.pausedAt}` : ""}
-        </p>
+        <p className="muted">Paused at step {run.pausedStepId}</p>
+      ) : null}
+      {run.approvalExpiresAt ? (
+        <p className="muted">Approval expires {run.approvalExpiresAt.replace("T", " ").slice(0, 19)}</p>
       ) : null}
       {run.error ? <p className="err">{run.error}</p> : null}
       {run.status === "awaiting_approval" ? (
@@ -134,7 +134,6 @@ export default function RunPage({ params }: { params: { id: string } }) {
           </button>
           <button
             disabled={busy}
-            title="Closes the pause only after approvalTtlMs has elapsed"
             onClick={() => {
               void (async () => {
                 setBusy(true);
@@ -149,7 +148,7 @@ export default function RunPage({ params }: { params: { id: string } }) {
               })();
             }}
           >
-            Expire
+            Expire if stale
           </button>
         </div>
         </div>

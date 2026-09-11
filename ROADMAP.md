@@ -16,7 +16,7 @@
 - [x] `chainOk` on run summaries / list view
 - [x] Operator verify of audit chain (`--verify-audit` + dashboard badge)
 - [x] HITL approval TTL / `expired` status
-- [x] Dashboard expire + `pausedAt` on run list summaries
+- [x] Stale-approval sweep (`--expire-stale`) + `approvalExpiresAt`
 
 ## Next
 

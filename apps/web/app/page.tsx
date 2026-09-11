@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   decideRun,
+  expireStaleRuns,
   fetchRuns,
   fetchWorkflows,
   getStoredApiToken,
@@ -152,6 +153,24 @@ export default function HomePage() {
         <button onClick={() => void refresh()} disabled={busy}>
           Refresh
         </button>
+        <button
+          disabled={busy}
+          onClick={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                await expireStaleRuns();
+                await refresh();
+              } catch (err) {
+                setError(err instanceof Error ? err.message : String(err));
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+        >
+          Expire stale
+        </button>
         <label className="muted">
           <input
             type="checkbox"
@@ -207,13 +226,14 @@ export default function HomePage() {
             <th>Status</th>
             <th>Audit</th>
             <th>Chain</th>
+            <th>Expires</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {visible.length === 0 ? (
             <tr>
-              <td colSpan={5} className="muted">
+              <td colSpan={7} className="muted">
                 No runs match the current filters.
               </td>
             </tr>
@@ -226,6 +246,11 @@ export default function HomePage() {
                 <td>{r.auditCount}</td>
                 <td className={r.chainOk === false ? "muted" : undefined}>
                   {r.chainOk === false ? "broken" : r.chainOk === true ? "ok" : "—"}
+                </td>
+                <td className="muted">
+                  {r.approvalExpiresAt
+                    ? r.approvalExpiresAt.replace("T", " ").slice(0, 19)
+                    : "—"}
                 </td>
                 <td>
                   <a href={`/runs/${r.id}`}>open</a>

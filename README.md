@@ -40,6 +40,7 @@ npm run start:orchestrator -- --cancel <runId>
 npm run start:orchestrator -- --retry-failed <runId>
 npm run start:orchestrator -- --verify-audit <runId>
 npm run start:orchestrator -- --expire <runId>
+npm run start:orchestrator -- --expire-stale
 ```
 
 Dry-run connectors (no tokens):

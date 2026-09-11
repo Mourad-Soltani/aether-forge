@@ -38,10 +38,10 @@ export interface RunSummary {
   startedAt: string;
   finishedAt?: string;
   pausedStepId?: string;
-  pausedAt?: string;
   auditCount: number;
   error?: string;
   chainOk?: boolean;
+  approvalExpiresAt?: string;
 }
 
 export interface AuditEvent {
@@ -73,9 +73,10 @@ export interface Run {
   audit: AuditEvent[];
   error?: string;
   pausedStepId?: string;
-  pausedAt?: string;
   approvedStepIds?: string[];
   completedStepIds?: string[];
+  pausedAt?: string;
+  approvalExpiresAt?: string;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -144,6 +145,10 @@ export function retryFailedRun(id: string) {
 
 export function expireRun(id: string) {
   return request<{ run: Run }>(`/runs/${id}/expire`, { method: "POST" });
+}
+
+export function expireStaleRuns() {
+  return request<{ expired: string[] }>("/runs/expire-stale", { method: "POST" });
 }
 
 export function fetchWorkflows() {

@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { configuredApiToken, isAuthorized } from "./auth.js";
 import { buildAuditBundle } from "./export.js";
-import { cancelRun, executeWorkflow, expireRun, resumeRun, retryFailedRun } from "./orchestrator.js";
+import { cancelRun, executeWorkflow, expireRun, expireStaleRuns, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
 
@@ -83,7 +83,14 @@ export async function handleRequest(
     }
 
     if (method === "GET" && pathname === "/runs") {
+      await expireStaleRuns();
       json(res, 200, { runs: await listRunSummaries() });
+      return;
+    }
+
+    if (method === "POST" && pathname === "/runs/expire-stale") {
+      const expired = await expireStaleRuns();
+      json(res, 200, { expired: expired.map((r) => r.id), runs: expired });
       return;
     }
 
@@ -101,7 +108,13 @@ export async function handleRequest(
     const runMatch = pathname.match(/^\/runs\/([^/]+)$/);
     if (method === "GET" && runMatch) {
       try {
-        const run = await loadRun(runMatch[1]);
+        let run = await loadRun(runMatch[1]);
+        if (run.status === "awaiting_approval") {
+          const closed = await expireStaleRuns();
+          const hit = closed.find((r) => r.id === run.id);
+          if (hit) run = hit;
+          else run = await loadRun(run.id);
+        }
         json(res, 200, { run });
       } catch {
         notFound(res);

@@ -109,6 +109,8 @@ export interface Run {
   pausedStepId?: string;
   /** ISO timestamp when the current HITL pause began. */
   pausedAt?: string;
+  /** ISO timestamp when the current HITL pause expires (workflow.approvalTtlMs). */
+  approvalExpiresAt?: string;
   /** Steps already approved for this run. */
   approvedStepIds?: string[];
   /** Steps whose waves finished successfully. Used by retryFailedRun. */
