@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import {
+  archiveRun,
   cancelRun,
   decideRun,
   expireRun,
   fetchAuditBundle,
   fetchRun,
   retryFailedRun,
+  unarchiveRun,
   type AuditChainReport,
   type Run,
 } from "../../../lib/api";
@@ -92,6 +94,9 @@ export default function RunPage({ params }: { params: { id: string } }) {
         <p className="muted">Approval expires {run.approvalExpiresAt.replace("T", " ").slice(0, 19)}</p>
       ) : null}
       {run.error ? <p className="err">{run.error}</p> : null}
+      {run.archivedAt ? (
+        <p className="muted">Archived {run.archivedAt.replace("T", " ").slice(0, 19)}</p>
+      ) : null}
       {run.status === "awaiting_approval" ? (
         <div>
         <p>
@@ -151,6 +156,49 @@ export default function RunPage({ params }: { params: { id: string } }) {
             Expire if stale
           </button>
         </div>
+        </div>
+      ) : null}
+      {["completed", "failed", "cancelled", "expired"].includes(run.status) ? (
+        <div className="row">
+          {run.archivedAt ? (
+            <button
+              disabled={busy}
+              onClick={() => {
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    const data = await unarchiveRun(params.id, reason || undefined);
+                    setRun(data.run);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : String(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+            >
+              Unarchive
+            </button>
+          ) : (
+            <button
+              disabled={busy}
+              onClick={() => {
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    const data = await archiveRun(params.id, reason || undefined);
+                    setRun(data.run);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : String(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+            >
+              Archive
+            </button>
+          )}
         </div>
       ) : null}
       {run.status === "failed" ? (

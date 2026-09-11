@@ -42,6 +42,7 @@ export interface RunSummary {
   error?: string;
   chainOk?: boolean;
   approvalExpiresAt?: string;
+  archivedAt?: string;
 }
 
 export interface AuditEvent {
@@ -77,6 +78,7 @@ export interface Run {
   completedStepIds?: string[];
   pausedAt?: string;
   approvalExpiresAt?: string;
+  archivedAt?: string;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -149,6 +151,20 @@ export function expireRun(id: string) {
 
 export function expireStaleRuns() {
   return request<{ expired: string[] }>("/runs/expire-stale", { method: "POST" });
+}
+
+export function archiveRun(id: string, reason?: string) {
+  return request<{ run: Run }>(`/runs/${id}/archive`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+}
+
+export function unarchiveRun(id: string, reason?: string) {
+  return request<{ run: Run }>(`/runs/${id}/unarchive`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
 }
 
 export function fetchWorkflows() {

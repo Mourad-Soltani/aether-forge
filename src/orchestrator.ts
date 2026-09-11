@@ -9,6 +9,7 @@ import { normalizeDecisionReason } from "./decision.js";
 import { resolveStepTimeoutMs, runWithTimeout } from "./timeout.js";
 import { computeApprovalExpiresAt, isApprovalExpired, resolveApprovalTtlMs } from "./expiry.js";
 import { resolveWorkflow } from "./workflows/registry.js";
+import { archiveRun, unarchiveRun } from "./archive.js";
 
 export type { RunSummary };
 export { summarizeRun };
@@ -487,6 +488,8 @@ Usage:
   npm run start:orchestrator -- --verify-audit <runId>
   npm run start:orchestrator -- --expire <runId>
   npm run start:orchestrator -- --expire-stale
+  npm run start:orchestrator -- --archive <runId> [--reason "..."]
+  npm run start:orchestrator -- --unarchive <runId> [--reason "..."]
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
@@ -494,6 +497,7 @@ Usage:
 --verify-audit prints the hash-chain report JSON and exits 1 if chain.ok is false.
 --expire closes a paused run when workflow.approvalTtlMs has elapsed.
 --expire-stale sweeps all paused runs and expires those past TTL.
+--archive / --unarchive hide or restore a terminal run without deleting the audit file.
 `);
 }
 
@@ -576,6 +580,24 @@ async function main() {
     const id = argv[cancelIdx + 1];
     if (!id) throw new Error("--cancel requires a run id");
     await cancelRun(id, readReasonFlag(argv));
+    return;
+  }
+  const archiveIdx = argv.indexOf("--archive");
+  if (archiveIdx >= 0) {
+    const id = argv[archiveIdx + 1];
+    if (!id) throw new Error("--archive requires a run id");
+    const run = await archiveRun(id, readReasonFlag(argv));
+    emitSummary(run);
+    humanLog(`Run archived: ${run.id}`);
+    return;
+  }
+  const unarchiveIdx = argv.indexOf("--unarchive");
+  if (unarchiveIdx >= 0) {
+    const id = argv[unarchiveIdx + 1];
+    if (!id) throw new Error("--unarchive requires a run id");
+    const run = await unarchiveRun(id, readReasonFlag(argv));
+    emitSummary(run);
+    humanLog(`Run unarchived: ${run.id}`);
     return;
   }
   const retryIdx = argv.indexOf("--retry-failed");

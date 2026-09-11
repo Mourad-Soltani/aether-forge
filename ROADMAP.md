@@ -17,6 +17,7 @@
 - [x] Operator verify of audit chain (`--verify-audit` + dashboard badge)
 - [x] HITL approval TTL / `expired` status
 - [x] Stale-approval sweep (`--expire-stale`) + `approvalExpiresAt`
+- [x] Operator archive / unarchive of terminal runs
 
 ## Next
 

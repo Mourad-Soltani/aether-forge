@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  archiveRun,
+  unarchiveRun,
   decideRun,
   expireStaleRuns,
   fetchRuns,
@@ -39,6 +41,7 @@ export default function HomePage() {
   const [statusFilter, setStatusFilter] = useState<RunStatus | "all">("all");
   const [workflowFilter, setWorkflowFilter] = useState("all");
   const [live, setLive] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
   async function refresh() {
@@ -98,9 +101,10 @@ export default function HomePage() {
     return runs.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (workflowFilter !== "all" && r.workflowId !== workflowFilter) return false;
+      if (!showArchived && r.archivedAt) return false;
       return true;
     });
-  }, [runs, statusFilter, workflowFilter]);
+  }, [runs, statusFilter, workflowFilter, showArchived]);
 
   const workflowIds = useMemo(() => {
     const ids = new Set(runs.map((r) => r.workflowId));
@@ -214,6 +218,14 @@ export default function HomePage() {
             ))}
           </select>
         </label>
+        <label className="muted">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />{" "}
+          show archived
+        </label>
         <span className="muted">
           showing {visible.length} / {runs.length}
         </span>
@@ -227,6 +239,7 @@ export default function HomePage() {
             <th>Audit</th>
             <th>Chain</th>
             <th>Expires</th>
+            <th>Archived</th>
             <th></th>
           </tr>
         </thead>
@@ -252,8 +265,54 @@ export default function HomePage() {
                     ? r.approvalExpiresAt.replace("T", " ").slice(0, 19)
                     : "—"}
                 </td>
+                <td className="muted">{r.archivedAt ? "yes" : "—"}</td>
                 <td>
                   <a href={`/runs/${r.id}`}>open</a>
+                  {r.archivedAt ? (
+                    <>
+                      {" "}
+                      <button
+                        disabled={busy}
+                        onClick={() => {
+                          void (async () => {
+                            setBusy(true);
+                            try {
+                              await unarchiveRun(r.id);
+                              await refresh();
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : String(err));
+                            } finally {
+                              setBusy(false);
+                            }
+                          })();
+                        }}
+                      >
+                        unarchive
+                      </button>
+                    </>
+                  ) : ["completed", "failed", "cancelled", "expired"].includes(r.status) ? (
+                    <>
+                      {" "}
+                      <button
+                        disabled={busy}
+                        onClick={() => {
+                          void (async () => {
+                            setBusy(true);
+                            try {
+                              await archiveRun(r.id);
+                              await refresh();
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : String(err));
+                            } finally {
+                              setBusy(false);
+                            }
+                          })();
+                        }}
+                      >
+                        archive
+                      </button>
+                    </>
+                  ) : null}
                   {r.status === "awaiting_approval" ? (
                     <>
                       {" "}

@@ -46,6 +46,7 @@ export interface RunSummary {
   error?: string;
   chainOk: boolean;
   approvalExpiresAt?: string;
+  archivedAt?: string;
 }
 
 export async function listRunSummaries(): Promise<RunSummary[]> {
@@ -65,6 +66,7 @@ export async function listRunSummaries(): Promise<RunSummary[]> {
         error: run.error,
         chainOk: verifyAuditChain(run.audit).ok,
         approvalExpiresAt: run.approvalExpiresAt,
+        archivedAt: run.archivedAt,
       });
     } catch {
       // skip unreadable files

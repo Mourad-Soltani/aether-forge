@@ -270,3 +270,12 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Dashboard lists `approvalExpiresAt`, Expire stale, and Expire if stale on the detail page.
 - Chat-pasted PATs remain unusable for live `wf.github`.
 
+
+
+## Session 31 — Run archive
+- Terminal runs (`completed` / `failed` / `cancelled` / `expired`) may be archived.
+- `Run.archivedAt` hides the run from the default dashboard list; persist file stays.
+- CLI `--archive` / `--unarchive`; API `POST /runs/:id/archive` and `/unarchive`.
+- Writes a `decision` audit event. Does not change `status`.
+- Paused and running runs cannot be archived.
+- Chat-pasted PATs remain unusable for live `wf.github`.

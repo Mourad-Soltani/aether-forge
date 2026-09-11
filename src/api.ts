@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { configuredApiToken, isAuthorized } from "./auth.js";
 import { buildAuditBundle } from "./export.js";
+import { archiveRun, unarchiveRun } from "./archive.js";
 import { cancelRun, executeWorkflow, expireRun, expireStaleRuns, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -153,6 +154,22 @@ export async function handleRequest(
       return;
     }
 
+    const archiveMatch = pathname.match(/^\/runs\/([^/]+)\/archive$/);
+    if (method === "POST" && archiveMatch) {
+      const body = (await readBody(req)) as { reason?: string };
+      const run = await archiveRun(archiveMatch[1], body.reason);
+      json(res, 200, { run });
+      return;
+    }
+
+    const unarchiveMatch = pathname.match(/^\/runs\/([^/]+)\/unarchive$/);
+    if (method === "POST" && unarchiveMatch) {
+      const body = (await readBody(req)) as { reason?: string };
+      const run = await unarchiveRun(unarchiveMatch[1], body.reason);
+      json(res, 200, { run });
+      return;
+    }
+
     const actionMatch = pathname.match(/^\/runs\/([^/]+)\/(approve|reject)$/);
     if (method === "POST" && actionMatch) {
       const body = (await readBody(req)) as { reason?: string };
@@ -170,7 +187,7 @@ export async function handleRequest(
     const message = err instanceof Error ? err.message : String(err);
     const status = message.includes("Unknown workflow") || message.includes("Invalid run")
       ? 400
-      : message.includes("expected awaiting_approval") || message.includes("expected failed")
+      : message.includes("expected awaiting_approval") || message.includes("expected failed") || message.includes("already archived") || message.includes("not archived") || message.includes("expected a terminal")
         ? 409
         : 500;
     json(res, status, { error: message });

@@ -115,4 +115,6 @@ export interface Run {
   approvedStepIds?: string[];
   /** Steps whose waves finished successfully. Used by retryFailedRun. */
   completedStepIds?: string[];
+  /** Operator hide. File and audit stay; list defaults omit archived runs. */
+  archivedAt?: string;
 }

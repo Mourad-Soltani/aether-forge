@@ -22,6 +22,7 @@ export const RunSummarySchema = z.object({
   persisted: z.string().optional(),
   chainOk: z.boolean(),
   approvalExpiresAt: z.string().optional(),
+  archived: z.boolean().optional(),
 });
 
 export type RunSummary = z.infer<typeof RunSummarySchema>;
@@ -38,6 +39,7 @@ export function summarizeRun(run: Run, persisted?: string): RunSummary {
     error: run.error ?? null,
     chainOk: verifyAuditChain(run.audit).ok,
     ...(run.approvalExpiresAt ? { approvalExpiresAt: run.approvalExpiresAt } : {}),
+    ...(run.archivedAt ? { archived: true } : {}),
     ...(persisted ? { persisted } : {}),
   });
 }
