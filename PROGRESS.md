@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 29 — 2026-09-11)
+## Current Status (Session 30 — 2026-09-11)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -47,6 +47,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 27 — `--verify-audit` CLI + dashboard chain badge; dashboard now sends HITL `reason`
 - [x] Session 28 — `chainOk` on `RunSummary` + persist list + dashboard list column
 - [x] Session 29 — HITL approval TTL (`approvalTtlMs`, `expired` status, `--expire`, `POST /runs/:id/expire`)
+- [x] Session 30 — dashboard Expire control + `pausedAt` on list summaries / run detail
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -102,9 +103,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 27: `--verify-audit` prints the chain report and exits 1 when broken. Dashboard shows chain status + hash prefixes. Approve/reject from the UI now forward the optional reason.
 - Session 28: `summarizeRun` and `listRunSummaries` include `chainOk` from `verifyAuditChain`. List page shows ok/broken without opening the run.
 - Session 29: workflows may set `approvalTtlMs`. Paused runs record `pausedAt`. After the window, `--expire` / approve / reject / cancel close the run as `expired` (not failed). Default HITL workflows have no TTL. `wf.hitl.ttl` is test-only (1ms).
+- Session 30: dashboard can POST expire; list summaries include `pausedAt`. Expire still no-ops until TTL elapsed (API error if window still open).
 
 ## Handoff for next session
-Session 29 ships HITL approval expiry. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 30 ships dashboard expire + pausedAt visibility. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash

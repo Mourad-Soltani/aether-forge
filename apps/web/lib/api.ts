@@ -38,6 +38,7 @@ export interface RunSummary {
   startedAt: string;
   finishedAt?: string;
   pausedStepId?: string;
+  pausedAt?: string;
   auditCount: number;
   error?: string;
   chainOk?: boolean;
@@ -72,6 +73,7 @@ export interface Run {
   audit: AuditEvent[];
   error?: string;
   pausedStepId?: string;
+  pausedAt?: string;
   approvedStepIds?: string[];
   completedStepIds?: string[];
 }
@@ -138,6 +140,10 @@ export function cancelRun(id: string, reason?: string) {
 
 export function retryFailedRun(id: string) {
   return request<{ run: Run }>(`/runs/${id}/retry`, { method: "POST" });
+}
+
+export function expireRun(id: string) {
+  return request<{ run: Run }>(`/runs/${id}/expire`, { method: "POST" });
 }
 
 export function fetchWorkflows() {

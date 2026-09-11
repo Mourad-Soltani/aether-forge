@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   cancelRun,
   decideRun,
+  expireRun,
   fetchAuditBundle,
   fetchRun,
   retryFailedRun,
@@ -85,7 +86,10 @@ export default function RunPage({ params }: { params: { id: string } }) {
         </label>
       </p>
       {run.pausedStepId ? (
-        <p className="muted">Paused at step {run.pausedStepId}</p>
+        <p className="muted">
+          Paused at step {run.pausedStepId}
+          {run.pausedAt ? ` · since ${run.pausedAt}` : ""}
+        </p>
       ) : null}
       {run.error ? <p className="err">{run.error}</p> : null}
       {run.status === "awaiting_approval" ? (
@@ -127,6 +131,25 @@ export default function RunPage({ params }: { params: { id: string } }) {
             }}
           >
             Cancel
+          </button>
+          <button
+            disabled={busy}
+            title="Closes the pause only after approvalTtlMs has elapsed"
+            onClick={() => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  const data = await expireRun(params.id);
+                  setRun(data.run);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : String(err));
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+          >
+            Expire
           </button>
         </div>
         </div>
