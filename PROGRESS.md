@@ -3,9 +3,9 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (CLOSED — Session 32 final — 2026-09-12)
+## Current Status (COMPLETE — Session 32 final — 2026-09-12)
 
-> **Daily builder complete. Client handover. Successor: Tokenpulse.**
+> **v0.1 control-plane complete.** Active flagship is Tokenpulse.
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -239,9 +239,9 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Chat-pasted PATs remain unusable for live `wf.github`.
 
 
-## PROJECT CLOSED — Client handover (2026-09-12)
+## PROJECT COMPLETE (2026-09-12)
 
-**Status:** Daily-builder loop on Aether Forge is complete. Repo is handed to the client for commercial use, pilot packaging, and live-credential demos.
+**Status:** Aether Forge **v0.1 control-plane is complete.**
 
 **Final technical state (Session 32):**
 - Scripted sequential + parallel waves, HITL (approve/reject/cancel/expire), archive/unarchive, operator notes
@@ -250,12 +250,10 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - Loopback control API + Next.js dashboard + secret-free `npm run demo`
 - Retry-failed, exponential backoff, approval TTL, stale sweep
 
-**Not in daily-builder scope (client owns):**
-- Live GitHub Issues proof with a rotated token outside chat
-- Live Slack / LLM with operator secrets
-- Landing page, pilot packaging, outreach, design partners
+**Optional follow-ons (not required for v0.1):**
+- Live GitHub Issues / Slack / LLM with operator-supplied credentials
+- Landing page and pilot packaging
+- Design-partner workflows in one vertical
 
-**Buyer conversations:** none recorded by the daily builder.
-
-**META-LOOP:** Successor project is **Tokenpulse** (`Mourad-Soltani/tokenpulse`). This file remains historical; do not restart Aether Forge sessions here.
+**Successor flagship:** **Tokenpulse** (`Mourad-Soltani/tokenpulse`). This file is historical; do not restart Aether Forge daily-builder sessions here.
 
