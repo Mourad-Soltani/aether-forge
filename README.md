@@ -8,7 +8,7 @@ Run multi-step agent workflows across tools with **human-in-the-loop**, an **app
 
 Enterprises do not struggle to call an LLM. They struggle to **coordinate irreversible actions** across GitHub, Slack, files, HTTP APIs, and models — with proof of what happened. Aether Forge is the execution + governance layer: scripted workflows, approvals, cancel vs reject, timeouts, retries, and exportable audit bundles.
 
-## What works today (v0.1)
+## What works today (v0.1 — complete)
 
 | Capability | Status |
 |------------|--------|
