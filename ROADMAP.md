@@ -1,6 +1,6 @@
 # Roadmap (public)
 
-## v0.1 — Control-plane MVP (current)
+## v0.1 — Control-plane MVP (complete)
 
 - [x] Scripted multi-step runtime (sequential + parallel waves)
 - [x] Human-in-the-loop (approve / reject / cancel)
@@ -20,11 +20,11 @@
 - [x] Operator archive / unarchive of terminal runs
 - [x] Operator notes on any run (append-only audit)
 
-## Next
+## Optional follow-ons
 
-- [ ] Recorded **live** irreversible demo (e.g. GitHub Issues with audit export)
-- [ ] Optional live Slack / LLM when operators supply local credentials
-- [ ] Landing page + pilot packaging (after live demo is recorded)
+- [ ] Recorded live irreversible demo (e.g. GitHub Issues with audit export)
+- [ ] Live Slack / LLM when operators supply local credentials
+- [ ] Landing page + pilot packaging
 - [ ] Design-partner workflows in one vertical (ops / IT / finance)
 
 ## Later
