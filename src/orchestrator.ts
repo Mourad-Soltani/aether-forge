@@ -10,6 +10,7 @@ import { resolveStepTimeoutMs, runWithTimeout } from "./timeout.js";
 import { computeApprovalExpiresAt, isApprovalExpired, resolveApprovalTtlMs } from "./expiry.js";
 import { resolveWorkflow } from "./workflows/registry.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
+import { noteRun } from "./note.js";
 
 export type { RunSummary };
 export { summarizeRun };
@@ -490,6 +491,7 @@ Usage:
   npm run start:orchestrator -- --expire-stale
   npm run start:orchestrator -- --archive <runId> [--reason "..."]
   npm run start:orchestrator -- --unarchive <runId> [--reason "..."]
+  npm run start:orchestrator -- --note <runId> --reason "..."
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
@@ -498,6 +500,7 @@ Usage:
 --expire closes a paused run when workflow.approvalTtlMs has elapsed.
 --expire-stale sweeps all paused runs and expires those past TTL.
 --archive / --unarchive hide or restore a terminal run without deleting the audit file.
+--note appends an operator comment to the audit trail (any status; does not change status).
 `);
 }
 
@@ -598,6 +601,15 @@ async function main() {
     const run = await unarchiveRun(id, readReasonFlag(argv));
     emitSummary(run);
     humanLog(`Run unarchived: ${run.id}`);
+    return;
+  }
+  const noteIdx = argv.indexOf("--note");
+  if (noteIdx >= 0) {
+    const id = argv[noteIdx + 1];
+    if (!id) throw new Error("--note requires a run id");
+    const run = await noteRun(id, readReasonFlag(argv));
+    emitSummary(run);
+    humanLog(`Note appended: ${run.id}`);
     return;
   }
   const retryIdx = argv.indexOf("--retry-failed");

@@ -167,6 +167,13 @@ export function unarchiveRun(id: string, reason?: string) {
   });
 }
 
+export function noteRun(id: string, reason: string) {
+  return request<{ run: Run }>(`/runs/${id}/note`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export function fetchWorkflows() {
   return request<{ workflows: { id: string; name: string; description?: string }[] }>(
     "/workflows",

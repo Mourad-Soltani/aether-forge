@@ -3,7 +3,7 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 31 — 2026-09-12)
+## Current Status (Session 32 — 2026-09-12)
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -49,6 +49,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 29 — HITL approval TTL (`approvalTtlMs`, `expired` status, `--expire`, `POST /runs/:id/expire`)
 - [x] Session 30 — `approvalExpiresAt` + `--expire-stale` sweep + dashboard expire controls
 - [x] Session 31 — archive / unarchive terminal runs (`archivedAt`, list hide-by-default)
+- [x] Session 32 — operator notes (`decision: note`, CLI `--note`, `POST /runs/:id/note`)
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -107,9 +108,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 
 - Session 30: paused TTL runs stamp `approvalExpiresAt`. `--expire-stale` / `POST /runs/expire-stale` close every elapsed pause. GET `/runs` and GET `/runs/:id` lazily sweep stale approvals so the list stays accurate. Dashboard shows expiry and can expire one run or sweep.
 - Session 31: terminal runs may set `archivedAt`. Archive does not delete the JSON file or break the audit chain. HITL / running runs cannot be archived. List UI hides archived by default.
+- Session 32: operators may append a `note` decision to any run. Required normalized text (max 500). Status unchanged. Empty notes rejected.
 
 ## Handoff for next session
-Session 31 ships operator archive/unarchive for terminal runs. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 32 ships operator notes on the audit trail. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -142,6 +144,7 @@ npm run dev:web
 # npm run start:orchestrator -- --workflow timeout-ok
 # npm run start:orchestrator -- --archive <runId> --reason "done"
 # npm run start:orchestrator -- --unarchive <runId>
+# npm run start:orchestrator -- --note <runId> --reason "pilot review"
 
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>
@@ -162,6 +165,8 @@ API:
 - `POST /runs/:id/cancel` body `{ "reason"?: string }`
 - `POST /runs/:id/retry` (failed runs only)
 - `POST /runs/:id/expire` (paused runs whose approvalTtlMs elapsed)
+- `POST /runs/:id/note` body `{ "reason": string }`
+- `POST /runs/:id/archive` / `POST /runs/:id/unarchive`
 
 Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`.
 

@@ -63,7 +63,7 @@ Run ids must match `[a-zA-Z0-9._-]` before any path join.
 ## Control API (Session 3–4)
 `src/api.ts` — Node `http` server, no extra runtime dependency.
 Default bind: `127.0.0.1:8787`.
-Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `/runs/:id/audit`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`, `POST /runs/:id/cancel`, `POST /runs/:id/retry`.
+Routes: `/health`, `/workflows`, `/runs`, `/runs/:id`, `/runs/:id/audit`, `POST /runs`, `POST /runs/:id/approve`, `POST /runs/:id/reject`, `POST /runs/:id/cancel`, `POST /runs/:id/retry`, `POST /runs/:id/note`.
 CORS origin default `http://localhost:3000`.
 Auth (Session 4): optional `AETHER_API_TOKEN`. When set, require `X-Aether-Token` or `Authorization: Bearer`. `/health` and `OPTIONS` stay open. Compare uses timing-safe equality.
 
@@ -278,4 +278,11 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - CLI `--archive` / `--unarchive`; API `POST /runs/:id/archive` and `/unarchive`.
 - Writes a `decision` audit event. Does not change `status`.
 - Paused and running runs cannot be archived.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 32 — Operator notes
+- `noteRun` appends `decision: note` with a required normalized reason (same 500-char cap as HITL reasons).
+- Allowed on any status, including HITL pause. Does not change `status` or `archivedAt`.
+- CLI `--note <runId> --reason "..."`; API `POST /runs/:id/note`; dashboard Add note.
+- Empty notes are rejected. Audit chain continues.
 - Chat-pasted PATs remain unusable for live `wf.github`.

@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { configuredApiToken, isAuthorized } from "./auth.js";
 import { buildAuditBundle } from "./export.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
+import { noteRun } from "./note.js";
 import { cancelRun, executeWorkflow, expireRun, expireStaleRuns, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -170,6 +171,14 @@ export async function handleRequest(
       return;
     }
 
+    const noteMatch = pathname.match(/^\/runs\/([^/]+)\/note$/);
+    if (method === "POST" && noteMatch) {
+      const body = (await readBody(req)) as { reason?: string; note?: string };
+      const run = await noteRun(noteMatch[1], body.reason ?? body.note);
+      json(res, 200, { run });
+      return;
+    }
+
     const actionMatch = pathname.match(/^\/runs\/([^/]+)\/(approve|reject)$/);
     if (method === "POST" && actionMatch) {
       const body = (await readBody(req)) as { reason?: string };
@@ -185,7 +194,7 @@ export async function handleRequest(
     notFound(res);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = message.includes("Unknown workflow") || message.includes("Invalid run")
+    const status = message.includes("Unknown workflow") || message.includes("Invalid run") || message.includes("Note text is required")
       ? 400
       : message.includes("expected awaiting_approval") || message.includes("expected failed") || message.includes("already archived") || message.includes("not archived") || message.includes("expected a terminal")
         ? 409

@@ -18,6 +18,7 @@
 - [x] HITL approval TTL / `expired` status
 - [x] Stale-approval sweep (`--expire-stale`) + `approvalExpiresAt`
 - [x] Operator archive / unarchive of terminal runs
+- [x] Operator notes on any run (append-only audit)
 
 ## Next
 

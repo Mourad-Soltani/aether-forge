@@ -8,6 +8,7 @@ import {
   expireRun,
   fetchAuditBundle,
   fetchRun,
+  noteRun,
   retryFailedRun,
   unarchiveRun,
   type AuditChainReport,
@@ -201,6 +202,40 @@ export default function RunPage({ params }: { params: { id: string } }) {
           )}
         </div>
       ) : null}
+      <p>
+        <label className="muted">
+          Operator note
+          <br />
+          <textarea
+            rows={2}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Append a comment to the audit trail"
+            style={{ width: "100%", marginTop: 4 }}
+          />
+        </label>
+      </p>
+      <div className="row">
+        <button
+          disabled={busy || !reason.trim()}
+          onClick={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                const data = await noteRun(params.id, reason);
+                setRun(data.run);
+                setReason("");
+              } catch (err) {
+                setError(err instanceof Error ? err.message : String(err));
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+        >
+          Add note
+        </button>
+      </div>
       {run.status === "failed" ? (
         <div className="row">
           <button
