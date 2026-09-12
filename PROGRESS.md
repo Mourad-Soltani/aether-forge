@@ -3,7 +3,9 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 32 — 2026-09-12)
+## Current Status (CLOSED — Session 32 final — 2026-09-12)
+
+> **Daily builder complete. Client handover. Successor: Tokenpulse.**
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -235,3 +237,25 @@ Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`
 - List API (`listRunSummaries`) includes the same flag so the dashboard does not download every audit bundle.
 - Pre-Session 26 events without hashes still report `chainOk: true` (legacy skip rule unchanged).
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## PROJECT CLOSED — Client handover (2026-09-12)
+
+**Status:** Daily-builder loop on Aether Forge is complete. Repo is handed to the client for commercial use, pilot packaging, and live-credential demos.
+
+**Final technical state (Session 32):**
+- Scripted sequential + parallel waves, HITL (approve/reject/cancel/expire), archive/unarchive, operator notes
+- Audit hash-chain + verify + export (`aether-audit-v1`)
+- Connectors: HTTP, GitHub Issues, Slack, workspace files, LLM (dry-run or env-gated)
+- Loopback control API + Next.js dashboard + secret-free `npm run demo`
+- Retry-failed, exponential backoff, approval TTL, stale sweep
+
+**Not in daily-builder scope (client owns):**
+- Live GitHub Issues proof with a rotated token outside chat
+- Live Slack / LLM with operator secrets
+- Landing page, pilot packaging, outreach, design partners
+
+**Buyer conversations:** none recorded by the daily builder.
+
+**META-LOOP:** Successor project is **Tokenpulse** (`Mourad-Soltani/tokenpulse`). This file remains historical; do not restart Aether Forge sessions here.
+
