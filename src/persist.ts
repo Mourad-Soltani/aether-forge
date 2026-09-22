@@ -47,6 +47,7 @@ export interface RunSummary {
   chainOk: boolean;
   approvalExpiresAt?: string;
   archivedAt?: string;
+  pinnedAt?: string;
 }
 
 export async function listRunSummaries(): Promise<RunSummary[]> {
@@ -67,11 +68,16 @@ export async function listRunSummaries(): Promise<RunSummary[]> {
         chainOk: verifyAuditChain(run.audit).ok,
         approvalExpiresAt: run.approvalExpiresAt,
         archivedAt: run.archivedAt,
+        pinnedAt: run.pinnedAt,
       });
     } catch {
       // skip unreadable files
     }
   }
-  rows.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  rows.sort((a, b) => {
+    const pin = Number(Boolean(b.pinnedAt)) - Number(Boolean(a.pinnedAt));
+    if (pin !== 0) return pin;
+    return b.startedAt.localeCompare(a.startedAt);
+  });
   return rows;
 }

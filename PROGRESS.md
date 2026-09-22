@@ -3,9 +3,9 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (COMPLETE — Session 32 final — 2026-09-12)
+## Current Status (Session 33 — 2026-09-23)
 
-> **v0.1 control-plane complete.** Active flagship is Tokenpulse.
+> **v0.1 control-plane complete.** Session 33 adds operator pin/unpin. Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -52,6 +52,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 30 — `approvalExpiresAt` + `--expire-stale` sweep + dashboard expire controls
 - [x] Session 31 — archive / unarchive terminal runs (`archivedAt`, list hide-by-default)
 - [x] Session 32 — operator notes (`decision: note`, CLI `--note`, `POST /runs/:id/note`)
+- [x] Session 33 — operator pin / unpin (`pinnedAt`, CLI `--pin` / `--unpin`, `POST /runs/:id/pin|unpin`)
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -111,9 +112,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 30: paused TTL runs stamp `approvalExpiresAt`. `--expire-stale` / `POST /runs/expire-stale` close every elapsed pause. GET `/runs` and GET `/runs/:id` lazily sweep stale approvals so the list stays accurate. Dashboard shows expiry and can expire one run or sweep.
 - Session 31: terminal runs may set `archivedAt`. Archive does not delete the JSON file or break the audit chain. HITL / running runs cannot be archived. List UI hides archived by default.
 - Session 32: operators may append a `note` decision to any run. Required normalized text (max 500). Status unchanged. Empty notes rejected.
+- Session 33: operators may pin any run (`pinnedAt`). List sorts pinned first, then `startedAt` desc. Pin does not change status or archive. Double-pin / unpin-unpinned refused.
 
 ## Handoff for next session
-Session 32 ships operator notes on the audit trail. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 33 ships operator pin/unpin. Lists sort pinned runs first. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -147,6 +149,8 @@ npm run dev:web
 # npm run start:orchestrator -- --archive <runId> --reason "done"
 # npm run start:orchestrator -- --unarchive <runId>
 # npm run start:orchestrator -- --note <runId> --reason "pilot review"
+# npm run start:orchestrator -- --pin <runId> --reason "watch"
+# npm run start:orchestrator -- --unpin <runId>
 
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>
@@ -168,6 +172,7 @@ API:
 - `POST /runs/:id/retry` (failed runs only)
 - `POST /runs/:id/expire` (paused runs whose approvalTtlMs elapsed)
 - `POST /runs/:id/note` body `{ "reason": string }`
+- `POST /runs/:id/pin` / `POST /runs/:id/unpin`
 - `POST /runs/:id/archive` / `POST /runs/:id/unarchive`
 
 Headers when gated: `X-Aether-Token: <token>` or `Authorization: Bearer <token>`.

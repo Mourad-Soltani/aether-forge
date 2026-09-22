@@ -3,6 +3,7 @@ import { configuredApiToken, isAuthorized } from "./auth.js";
 import { buildAuditBundle } from "./export.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
+import { pinRun, unpinRun } from "./pin.js";
 import { cancelRun, executeWorkflow, expireRun, expireStaleRuns, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -179,6 +180,22 @@ export async function handleRequest(
       return;
     }
 
+    const pinMatch = pathname.match(/^\/runs\/([^/]+)\/pin$/);
+    if (method === "POST" && pinMatch) {
+      const body = (await readBody(req)) as { reason?: string };
+      const run = await pinRun(pinMatch[1], body.reason);
+      json(res, 200, { run });
+      return;
+    }
+
+    const unpinMatch = pathname.match(/^\/runs\/([^/]+)\/unpin$/);
+    if (method === "POST" && unpinMatch) {
+      const body = (await readBody(req)) as { reason?: string };
+      const run = await unpinRun(unpinMatch[1], body.reason);
+      json(res, 200, { run });
+      return;
+    }
+
     const actionMatch = pathname.match(/^\/runs\/([^/]+)\/(approve|reject)$/);
     if (method === "POST" && actionMatch) {
       const body = (await readBody(req)) as { reason?: string };
@@ -196,7 +213,7 @@ export async function handleRequest(
     const message = err instanceof Error ? err.message : String(err);
     const status = message.includes("Unknown workflow") || message.includes("Invalid run") || message.includes("Note text is required")
       ? 400
-      : message.includes("expected awaiting_approval") || message.includes("expected failed") || message.includes("already archived") || message.includes("not archived") || message.includes("expected a terminal")
+      : message.includes("expected awaiting_approval") || message.includes("expected failed") || message.includes("already archived") || message.includes("not archived") || message.includes("expected a terminal") || message.includes("already pinned") || message.includes("not pinned")
         ? 409
         : 500;
     json(res, status, { error: message });

@@ -286,3 +286,10 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - CLI `--note <runId> --reason "..."`; API `POST /runs/:id/note`; dashboard Add note.
 - Empty notes are rejected. Audit chain continues.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 33 — Operator pin
+- `Run.pinnedAt` is an operator bookmark. Any status may be pinned, including HITL pause.
+- `pinRun` / `unpinRun` write `decision: pin|unpin`. Status and `archivedAt` are unchanged.
+- `listRunSummaries` sorts pinned rows first, then `startedAt` descending.
+- CLI `--pin` / `--unpin`; API `POST /runs/:id/pin` and `/unpin`; dashboard Pin.
+- Chat-pasted PATs remain unusable for live `wf.github`.

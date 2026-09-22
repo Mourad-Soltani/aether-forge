@@ -9,8 +9,10 @@ import {
   fetchAuditBundle,
   fetchRun,
   noteRun,
+  pinRun,
   retryFailedRun,
   unarchiveRun,
+  unpinRun,
   type AuditChainReport,
   type Run,
 } from "../../../lib/api";
@@ -97,6 +99,9 @@ export default function RunPage({ params }: { params: { id: string } }) {
       {run.error ? <p className="err">{run.error}</p> : null}
       {run.archivedAt ? (
         <p className="muted">Archived {run.archivedAt.replace("T", " ").slice(0, 19)}</p>
+      ) : null}
+      {run.pinnedAt ? (
+        <p className="muted">Pinned {run.pinnedAt.replace("T", " ").slice(0, 19)}</p>
       ) : null}
       {run.status === "awaiting_approval" ? (
         <div>
@@ -235,6 +240,45 @@ export default function RunPage({ params }: { params: { id: string } }) {
         >
           Add note
         </button>
+        {run.pinnedAt ? (
+          <button
+            disabled={busy}
+            onClick={() => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  const data = await unpinRun(params.id, reason || undefined);
+                  setRun(data.run);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : String(err));
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+          >
+            Unpin
+          </button>
+        ) : (
+          <button
+            disabled={busy}
+            onClick={() => {
+              void (async () => {
+                setBusy(true);
+                try {
+                  const data = await pinRun(params.id, reason || undefined);
+                  setRun(data.run);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : String(err));
+                } finally {
+                  setBusy(false);
+                }
+              })();
+            }}
+          >
+            Pin
+          </button>
+        )}
       </div>
       {run.status === "failed" ? (
         <div className="row">

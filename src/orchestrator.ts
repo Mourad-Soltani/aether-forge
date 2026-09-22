@@ -11,6 +11,7 @@ import { computeApprovalExpiresAt, isApprovalExpired, resolveApprovalTtlMs } fro
 import { resolveWorkflow } from "./workflows/registry.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
+import { pinRun, unpinRun } from "./pin.js";
 
 export type { RunSummary };
 export { summarizeRun };
@@ -492,6 +493,8 @@ Usage:
   npm run start:orchestrator -- --archive <runId> [--reason "..."]
   npm run start:orchestrator -- --unarchive <runId> [--reason "..."]
   npm run start:orchestrator -- --note <runId> --reason "..."
+  npm run start:orchestrator -- --pin <runId> [--reason "..."]
+  npm run start:orchestrator -- --unpin <runId> [--reason "..."]
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
@@ -501,6 +504,7 @@ Usage:
 --expire-stale sweeps all paused runs and expires those past TTL.
 --archive / --unarchive hide or restore a terminal run without deleting the audit file.
 --note appends an operator comment to the audit trail (any status; does not change status).
+--pin / --unpin mark a run so lists sort it first. Status unchanged.
 `);
 }
 
@@ -610,6 +614,24 @@ async function main() {
     const run = await noteRun(id, readReasonFlag(argv));
     emitSummary(run);
     humanLog(`Note appended: ${run.id}`);
+    return;
+  }
+  const pinIdx = argv.indexOf("--pin");
+  if (pinIdx >= 0) {
+    const id = argv[pinIdx + 1];
+    if (!id) throw new Error("--pin requires a run id");
+    const run = await pinRun(id, readReasonFlag(argv));
+    emitSummary(run);
+    humanLog(`Run pinned: ${run.id}`);
+    return;
+  }
+  const unpinIdx = argv.indexOf("--unpin");
+  if (unpinIdx >= 0) {
+    const id = argv[unpinIdx + 1];
+    if (!id) throw new Error("--unpin requires a run id");
+    const run = await unpinRun(id, readReasonFlag(argv));
+    emitSummary(run);
+    humanLog(`Run unpinned: ${run.id}`);
     return;
   }
   const retryIdx = argv.indexOf("--retry-failed");

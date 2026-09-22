@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   archiveRun,
   unarchiveRun,
+  pinRun,
+  unpinRun,
   decideRun,
   expireStaleRuns,
   fetchRuns,
@@ -240,6 +242,7 @@ export default function HomePage() {
             <th>Chain</th>
             <th>Expires</th>
             <th>Archived</th>
+            <th>Pinned</th>
             <th></th>
           </tr>
         </thead>
@@ -266,6 +269,7 @@ export default function HomePage() {
                     : "—"}
                 </td>
                 <td className="muted">{r.archivedAt ? "yes" : "—"}</td>
+                <td className="muted">{r.pinnedAt ? "yes" : "—"}</td>
                 <td>
                   <a href={`/runs/${r.id}`}>open</a>
                   {r.archivedAt ? (
@@ -313,6 +317,51 @@ export default function HomePage() {
                       </button>
                     </>
                   ) : null}
+                  {r.pinnedAt ? (
+                    <>
+                      {" "}
+                      <button
+                        disabled={busy}
+                        onClick={() => {
+                          void (async () => {
+                            setBusy(true);
+                            try {
+                              await unpinRun(r.id);
+                              await refresh();
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : String(err));
+                            } finally {
+                              setBusy(false);
+                            }
+                          })();
+                        }}
+                      >
+                        unpin
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {" "}
+                      <button
+                        disabled={busy}
+                        onClick={() => {
+                          void (async () => {
+                            setBusy(true);
+                            try {
+                              await pinRun(r.id);
+                              await refresh();
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : String(err));
+                            } finally {
+                              setBusy(false);
+                            }
+                          })();
+                        }}
+                      >
+                        pin
+                      </button>
+                    </>
+                  )}
                   {r.status === "awaiting_approval" ? (
                     <>
                       {" "}

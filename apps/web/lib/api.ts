@@ -43,6 +43,7 @@ export interface RunSummary {
   chainOk?: boolean;
   approvalExpiresAt?: string;
   archivedAt?: string;
+  pinnedAt?: string;
 }
 
 export interface AuditEvent {
@@ -79,6 +80,7 @@ export interface Run {
   pausedAt?: string;
   approvalExpiresAt?: string;
   archivedAt?: string;
+  pinnedAt?: string;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -171,6 +173,20 @@ export function noteRun(id: string, reason: string) {
   return request<{ run: Run }>(`/runs/${id}/note`, {
     method: "POST",
     body: JSON.stringify({ reason }),
+  });
+}
+
+export function pinRun(id: string, reason?: string) {
+  return request<{ run: Run }>(`/runs/${id}/pin`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+}
+
+export function unpinRun(id: string, reason?: string) {
+  return request<{ run: Run }>(`/runs/${id}/unpin`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
   });
 }
 

@@ -117,4 +117,6 @@ export interface Run {
   completedStepIds?: string[];
   /** Operator hide. File and audit stay; list defaults omit archived runs. */
   archivedAt?: string;
+  /** Operator pin. List sorts pinned runs first. Status unchanged. */
+  pinnedAt?: string;
 }
