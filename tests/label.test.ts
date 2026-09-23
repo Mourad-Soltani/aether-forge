@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { labelRun, unlabelRun, normalizeLabel } from "../src/label.js";
+import { labelRun, unlabelRun, normalizeLabel, filterByLabel } from "../src/label.js";
 import { executeWorkflow } from "../src/orchestrator.js";
-import { loadRun } from "../src/persist.js";
+import { loadRun, listRunSummaries } from "../src/persist.js";
 import { summarizeRun } from "../src/summary.js";
 import { resolveWorkflow } from "../src/workflows/registry.js";
 
@@ -51,4 +51,20 @@ test("labelRun: allowed on HITL pause", async () => {
   const labeled = await labelRun(paused.id, "review");
   assert.deepEqual(labeled.labels, ["review"]);
   assert.equal(labeled.status, "awaiting_approval");
+});
+
+test("filterByLabel and listRunSummaries({label}) keep matching rows", async () => {
+  const { workflow, agents } = resolveWorkflow("hello");
+  const a = await executeWorkflow(workflow, agents);
+  const b = await executeWorkflow(workflow, agents);
+  await labelRun(a.id, "pilot");
+  await labelRun(b.id, "watch");
+  const filtered = filterByLabel(
+    [{ id: a.id, labels: ["pilot"] }, { id: b.id, labels: ["watch"] }],
+    "pilot",
+  );
+  assert.deepEqual(filtered.map((r) => r.id), [a.id]);
+  const listed = filterByLabel(await listRunSummaries(), "pilot");
+  assert.ok(listed.some((r) => r.id === a.id));
+  assert.ok(!listed.some((r) => r.id === b.id));
 });

@@ -3,9 +3,9 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 34 — 2026-09-23)
+## Current Status (Session 35 — 2026-09-24)
 
-> **v0.1 control-plane complete.** Session 34 adds operator labels. Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
+> **v0.1 control-plane complete.** Session 35 adds label-filtered run lists. Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -54,6 +54,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 32 — operator notes (`decision: note`, CLI `--note`, `POST /runs/:id/note`)
 - [x] Session 33 — operator pin / unpin (`pinnedAt`, CLI `--pin` / `--unpin`, `POST /runs/:id/pin|unpin`)
 - [x] Session 34 — operator labels (`labels[]`, CLI `--label` / `--unlabel`, `POST /runs/:id/label|unlabel`)
+- [x] Session 35 — filter run lists by label (`GET /runs?label=`, CLI `--list --label`, dashboard dropdown)
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -116,8 +117,14 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 33: operators may pin any run (`pinnedAt`). List sorts pinned first, then `startedAt` desc. Pin does not change status or archive. Double-pin / unpin-unpinned refused.
 - Session 34: operators may attach up to 8 labels (`[a-z0-9][a-z0-9._-]{0,31}`). Label does not change status, pin, or archive. Duplicate / missing labels refused.
 
+## Decisions (Session 35)
+- List filter is exact-match on a normalized label. Missing / `all` returns the full list.
+- API filter is query-param only (`?label=`). Status/pin/archive unchanged.
+- CLI `--list --label` shares `listRunSummaries`. `--label <runId>` (mutate) is still a separate command.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
 ## Handoff for next session
-Session 34 ships operator labels. Lists and detail show tags. Pin still sorts first. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 35 ships label-filtered lists (API, CLI, dashboard). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -155,6 +162,7 @@ npm run dev:web
 # npm run start:orchestrator -- --unpin <runId>
 # npm run start:orchestrator -- --label <runId> --reason pilot
 # npm run start:orchestrator -- --unlabel <runId> --reason pilot
+# npm run start:orchestrator -- --list --label pilot
 
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>

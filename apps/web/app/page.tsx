@@ -44,6 +44,7 @@ export default function HomePage() {
   const [workflowFilter, setWorkflowFilter] = useState("all");
   const [live, setLive] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [labelFilter, setLabelFilter] = useState("all");
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
   async function refresh() {
@@ -104,15 +105,22 @@ export default function HomePage() {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (workflowFilter !== "all" && r.workflowId !== workflowFilter) return false;
       if (!showArchived && r.archivedAt) return false;
+      if (labelFilter !== "all" && !(r.labels ?? []).includes(labelFilter)) return false;
       return true;
     });
-  }, [runs, statusFilter, workflowFilter, showArchived]);
+  }, [runs, statusFilter, workflowFilter, showArchived, labelFilter]);
 
   const workflowIds = useMemo(() => {
     const ids = new Set(runs.map((r) => r.workflowId));
     for (const w of workflows) ids.add(w.id);
     return Array.from(ids).sort();
   }, [runs, workflows]);
+
+  const labelIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of runs) for (const l of r.labels ?? []) ids.add(l);
+    return Array.from(ids).sort();
+  }, [runs]);
 
   const pendingCount = runs.filter((r) => r.status === "awaiting_approval").length;
 
@@ -214,6 +222,20 @@ export default function HomePage() {
           >
             <option value="all">all</option>
             {workflowIds.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="muted">
+          label{" "}
+          <select
+            value={labelFilter}
+            onChange={(e) => setLabelFilter(e.target.value)}
+          >
+            <option value="all">all</option>
+            {labelIds.map((id) => (
               <option key={id} value={id}>
                 {id}
               </option>

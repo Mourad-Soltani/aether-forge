@@ -4,7 +4,7 @@ import { buildAuditBundle } from "./export.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
 import { pinRun, unpinRun } from "./pin.js";
-import { labelRun, unlabelRun } from "./label.js";
+import { filterByLabel, labelRun, unlabelRun } from "./label.js";
 import { cancelRun, executeWorkflow, expireRun, expireStaleRuns, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -88,7 +88,8 @@ export async function handleRequest(
 
     if (method === "GET" && pathname === "/runs") {
       await expireStaleRuns();
-      json(res, 200, { runs: await listRunSummaries() });
+      const label = url.searchParams.get("label") ?? undefined;
+      json(res, 200, { runs: filterByLabel(await listRunSummaries(), label) });
       return;
     }
 

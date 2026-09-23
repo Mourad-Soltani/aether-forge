@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { appendAudit, verifyAuditChain } from "./audit.js";
 import { auditBundleToJsonl, buildAuditBundle } from "./export.js";
-import { listRuns, loadRun, saveRun } from "./persist.js";
+import { listRuns, listRunSummaries, loadRun, saveRun } from "./persist.js";
 import { summarizeRun, type RunSummary } from "./summary.js";
 import type { Agent, Run, Step, ToolContext, Workflow } from "./types.js";
 import { resolveStepRetry, computeBackoffMs, sleep } from "./retry.js";
@@ -12,7 +12,7 @@ import { resolveWorkflow } from "./workflows/registry.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
 import { pinRun, unpinRun } from "./pin.js";
-import { labelRun, unlabelRun } from "./label.js";
+import { filterByLabel, labelRun, unlabelRun } from "./label.js";
 
 export type { RunSummary };
 export { summarizeRun };
@@ -482,7 +482,7 @@ function printUsage(): void {
 
 Usage:
   npm run start:orchestrator [-- --workflow <hello|hitl|http|parallel|wf.*>]
-  npm run start:orchestrator -- --list
+  npm run start:orchestrator -- --list [--label <tag>]
   npm run start:orchestrator -- --approve <runId> [--reason "..."]
   npm run start:orchestrator -- --reject <runId> [--reason "..."]
   npm run start:orchestrator -- --cancel <runId> [--reason "..."]
@@ -509,6 +509,7 @@ Usage:
 --note appends an operator comment to the audit trail (any status; does not change status).
 --pin / --unpin mark a run so lists sort it first. Status unchanged.
 --label / --unlabel attach a short operator tag (max 8 per run). Status unchanged.
+--list --label <tag> prints only runs that carry that tag.
 `);
 }
 
@@ -527,9 +528,14 @@ async function main() {
     return;
   }
   if (argv.includes("--list")) {
-    const ids = await listRuns();
+    const labelFlag = argv.indexOf("--label");
+    const labelFilter = labelFlag >= 0 && !argv[labelFlag + 1]?.startsWith("--")
+      ? argv[labelFlag + 1]
+      : undefined;
+    const rows = filterByLabel(await listRunSummaries(), labelFilter);
+    const ids = rows.map((r) => r.id);
     if (jsonMode) {
-      console.log(JSON.stringify({ ok: true, runs: ids }));
+      console.log(JSON.stringify({ ok: true, runs: ids, labels: labelFilter ? [labelFilter] : undefined }));
       return;
     }
     console.log(ids.length ? ids.join("\n") : "(no runs yet)");

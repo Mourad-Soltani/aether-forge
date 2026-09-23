@@ -17,6 +17,24 @@ export function normalizeLabel(raw?: string): string {
   return value;
 }
 
+/** True when the run carries the exact normalized label. */
+export function runHasLabel(
+  labels: string[] | undefined,
+  raw?: string,
+): boolean {
+  const needle = normalizeLabel(raw);
+  return (labels ?? []).includes(needle);
+}
+
+export function filterByLabel<T extends { labels?: string[] }>(
+  rows: T[],
+  raw?: string,
+): T[] {
+  if (raw === undefined || raw === "" || raw === "all") return rows;
+  const needle = normalizeLabel(raw);
+  return rows.filter((r) => (r.labels ?? []).includes(needle));
+}
+
 /** Add an operator label. Any status. Does not change status or pin/archive. */
 export async function labelRun(runId: string, raw?: string): Promise<Run> {
   const run = await loadRun(runId);

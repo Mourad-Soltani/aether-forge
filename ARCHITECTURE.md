@@ -303,3 +303,12 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - API `POST /runs/:id/label` and `/unlabel` accept `{ label }` or `{ reason }`.
 - Summaries include `labels` when non-empty. Dashboard list + detail can add/remove tags.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Session 35 — Filter lists by label
+- `listRunSummaries({ label })` keeps rows whose `labels` include the normalized tag.
+- `GET /runs?label=<tag>` applies the same filter after the stale-approval sweep.
+- CLI `--list --label <tag>` prints matching run ids (`--json` includes the filter).
+- Dashboard list adds a label dropdown (client-side over the same summaries).
+- Invalid label strings still throw from `normalizeLabel` (API 400).
+- Chat-pasted PATs remain unusable for live `wf.github`.
