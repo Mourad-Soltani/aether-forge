@@ -119,4 +119,6 @@ export interface Run {
   archivedAt?: string;
   /** Operator pin. List sorts pinned runs first. Status unchanged. */
   pinnedAt?: string;
+  /** Operator labels (normalized, max 8). Status unchanged. */
+  labels?: string[];
 }

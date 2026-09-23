@@ -293,3 +293,13 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - `listRunSummaries` sorts pinned rows first, then `startedAt` descending.
 - CLI `--pin` / `--unpin`; API `POST /runs/:id/pin` and `/unpin`; dashboard Pin.
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+
+## Session 34 — Operator labels
+- `Run.labels` is a short operator tag list (max 8). Any status may be labeled.
+- Labels are normalized: lowercase, `[a-z0-9][a-z0-9._-]{0,31}`.
+- `labelRun` / `unlabelRun` write `decision: label|unlabel`. Status, pin, and archive are unchanged.
+- CLI `--label` / `--unlabel` use `--reason` as the label text.
+- API `POST /runs/:id/label` and `/unlabel` accept `{ label }` or `{ reason }`.
+- Summaries include `labels` when non-empty. Dashboard list + detail can add/remove tags.
+- Chat-pasted PATs remain unusable for live `wf.github`.

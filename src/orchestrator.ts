@@ -12,6 +12,7 @@ import { resolveWorkflow } from "./workflows/registry.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
 import { pinRun, unpinRun } from "./pin.js";
+import { labelRun, unlabelRun } from "./label.js";
 
 export type { RunSummary };
 export { summarizeRun };
@@ -495,6 +496,8 @@ Usage:
   npm run start:orchestrator -- --note <runId> --reason "..."
   npm run start:orchestrator -- --pin <runId> [--reason "..."]
   npm run start:orchestrator -- --unpin <runId> [--reason "..."]
+  npm run start:orchestrator -- --label <runId> --reason <label>
+  npm run start:orchestrator -- --unlabel <runId> --reason <label>
   npm run start:orchestrator -- --json --workflow hello
 
 --json prints one RunSummary object to stdout; human logs go to stderr.
@@ -505,6 +508,7 @@ Usage:
 --archive / --unarchive hide or restore a terminal run without deleting the audit file.
 --note appends an operator comment to the audit trail (any status; does not change status).
 --pin / --unpin mark a run so lists sort it first. Status unchanged.
+--label / --unlabel attach a short operator tag (max 8 per run). Status unchanged.
 `);
 }
 
@@ -632,6 +636,24 @@ async function main() {
     const run = await unpinRun(id, readReasonFlag(argv));
     emitSummary(run);
     humanLog(`Run unpinned: ${run.id}`);
+    return;
+  }
+  const labelIdx = argv.indexOf("--label");
+  if (labelIdx >= 0) {
+    const id = argv[labelIdx + 1];
+    if (!id) throw new Error("--label requires a run id");
+    const run = await labelRun(id, readReasonFlag(argv));
+    emitSummary(run);
+    humanLog(`Labeled: ${run.id} -> ${(run.labels ?? []).join(",")}`);
+    return;
+  }
+  const unlabelIdx = argv.indexOf("--unlabel");
+  if (unlabelIdx >= 0) {
+    const id = argv[unlabelIdx + 1];
+    if (!id) throw new Error("--unlabel requires a run id");
+    const run = await unlabelRun(id, readReasonFlag(argv));
+    emitSummary(run);
+    humanLog(`Unlabeled: ${run.id}`);
     return;
   }
   const retryIdx = argv.indexOf("--retry-failed");

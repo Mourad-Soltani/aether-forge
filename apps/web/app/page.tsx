@@ -243,13 +243,14 @@ export default function HomePage() {
             <th>Expires</th>
             <th>Archived</th>
             <th>Pinned</th>
+            <th>Labels</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {visible.length === 0 ? (
             <tr>
-              <td colSpan={7} className="muted">
+              <td colSpan={10} className="muted">
                 No runs match the current filters.
               </td>
             </tr>
@@ -270,6 +271,7 @@ export default function HomePage() {
                 </td>
                 <td className="muted">{r.archivedAt ? "yes" : "—"}</td>
                 <td className="muted">{r.pinnedAt ? "yes" : "—"}</td>
+                <td className="muted">{r.labels?.length ? r.labels.join(", ") : "—"}</td>
                 <td>
                   <a href={`/runs/${r.id}`}>open</a>
                   {r.archivedAt ? (

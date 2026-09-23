@@ -4,6 +4,7 @@ import { buildAuditBundle } from "./export.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
 import { pinRun, unpinRun } from "./pin.js";
+import { labelRun, unlabelRun } from "./label.js";
 import { cancelRun, executeWorkflow, expireRun, expireStaleRuns, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -196,6 +197,22 @@ export async function handleRequest(
       return;
     }
 
+    const labelMatch = pathname.match(/^\/runs\/([^/]+)\/label$/);
+    if (method === "POST" && labelMatch) {
+      const body = (await readBody(req)) as { reason?: string; label?: string };
+      const run = await labelRun(labelMatch[1], body.label ?? body.reason);
+      json(res, 200, { run });
+      return;
+    }
+
+    const unlabelMatch = pathname.match(/^\/runs\/([^/]+)\/unlabel$/);
+    if (method === "POST" && unlabelMatch) {
+      const body = (await readBody(req)) as { reason?: string; label?: string };
+      const run = await unlabelRun(unlabelMatch[1], body.label ?? body.reason);
+      json(res, 200, { run });
+      return;
+    }
+
     const actionMatch = pathname.match(/^\/runs\/([^/]+)\/(approve|reject)$/);
     if (method === "POST" && actionMatch) {
       const body = (await readBody(req)) as { reason?: string };
@@ -211,9 +228,9 @@ export async function handleRequest(
     notFound(res);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = message.includes("Unknown workflow") || message.includes("Invalid run") || message.includes("Note text is required")
+    const status = message.includes("Unknown workflow") || message.includes("Invalid run") || message.includes("Note text is required") || message.includes("Label is required") || message.includes("Label must match")
       ? 400
-      : message.includes("expected awaiting_approval") || message.includes("expected failed") || message.includes("already archived") || message.includes("not archived") || message.includes("expected a terminal") || message.includes("already pinned") || message.includes("not pinned")
+      : message.includes("expected awaiting_approval") || message.includes("expected failed") || message.includes("already archived") || message.includes("not archived") || message.includes("expected a terminal") || message.includes("already pinned") || message.includes("not pinned") || message.includes("already has label") || message.includes("does not have label") || message.includes("already has 8 labels")
         ? 409
         : 500;
     json(res, status, { error: message });

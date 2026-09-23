@@ -48,6 +48,7 @@ export interface RunSummary {
   approvalExpiresAt?: string;
   archivedAt?: string;
   pinnedAt?: string;
+  labels?: string[];
 }
 
 export async function listRunSummaries(): Promise<RunSummary[]> {
@@ -69,6 +70,7 @@ export async function listRunSummaries(): Promise<RunSummary[]> {
         approvalExpiresAt: run.approvalExpiresAt,
         archivedAt: run.archivedAt,
         pinnedAt: run.pinnedAt,
+        labels: run.labels,
       });
     } catch {
       // skip unreadable files

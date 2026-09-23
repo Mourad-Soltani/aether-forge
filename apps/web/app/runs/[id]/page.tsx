@@ -10,6 +10,8 @@ import {
   fetchRun,
   noteRun,
   pinRun,
+  labelRun,
+  unlabelRun,
   retryFailedRun,
   unarchiveRun,
   unpinRun,
@@ -102,6 +104,34 @@ export default function RunPage({ params }: { params: { id: string } }) {
       ) : null}
       {run.pinnedAt ? (
         <p className="muted">Pinned {run.pinnedAt.replace("T", " ").slice(0, 19)}</p>
+      ) : null}
+      {run.labels?.length ? (
+        <p className="muted">
+          Labels:{" "}
+          {run.labels.map((l) => (
+            <button
+              key={l}
+              disabled={busy}
+              title={`Remove ${l}`}
+              onClick={() => {
+                void (async () => {
+                  setBusy(true);
+                  try {
+                    const data = await unlabelRun(params.id, l);
+                    setRun(data.run);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : String(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+              style={{ marginRight: 6 }}
+            >
+              {l} ×
+            </button>
+          ))}
+        </p>
       ) : null}
       {run.status === "awaiting_approval" ? (
         <div>
@@ -279,6 +309,25 @@ export default function RunPage({ params }: { params: { id: string } }) {
             Pin
           </button>
         )}
+        <button
+          disabled={busy || !reason.trim()}
+          onClick={() => {
+            void (async () => {
+              setBusy(true);
+              try {
+                const data = await labelRun(params.id, reason.trim());
+                setRun(data.run);
+                setReason("");
+              } catch (err) {
+                setError(err instanceof Error ? err.message : String(err));
+              } finally {
+                setBusy(false);
+              }
+            })();
+          }}
+        >
+          Add label
+        </button>
       </div>
       {run.status === "failed" ? (
         <div className="row">

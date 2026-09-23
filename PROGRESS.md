@@ -3,9 +3,9 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 33 — 2026-09-23)
+## Current Status (Session 34 — 2026-09-23)
 
-> **v0.1 control-plane complete.** Session 33 adds operator pin/unpin. Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
+> **v0.1 control-plane complete.** Session 34 adds operator labels. Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -53,6 +53,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 31 — archive / unarchive terminal runs (`archivedAt`, list hide-by-default)
 - [x] Session 32 — operator notes (`decision: note`, CLI `--note`, `POST /runs/:id/note`)
 - [x] Session 33 — operator pin / unpin (`pinnedAt`, CLI `--pin` / `--unpin`, `POST /runs/:id/pin|unpin`)
+- [x] Session 34 — operator labels (`labels[]`, CLI `--label` / `--unlabel`, `POST /runs/:id/label|unlabel`)
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -113,9 +114,10 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Session 31: terminal runs may set `archivedAt`. Archive does not delete the JSON file or break the audit chain. HITL / running runs cannot be archived. List UI hides archived by default.
 - Session 32: operators may append a `note` decision to any run. Required normalized text (max 500). Status unchanged. Empty notes rejected.
 - Session 33: operators may pin any run (`pinnedAt`). List sorts pinned first, then `startedAt` desc. Pin does not change status or archive. Double-pin / unpin-unpinned refused.
+- Session 34: operators may attach up to 8 labels (`[a-z0-9][a-z0-9._-]{0,31}`). Label does not change status, pin, or archive. Duplicate / missing labels refused.
 
 ## Handoff for next session
-Session 33 ships operator pin/unpin. Lists sort pinned runs first. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 34 ships operator labels. Lists and detail show tags. Pin still sorts first. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -151,6 +153,8 @@ npm run dev:web
 # npm run start:orchestrator -- --note <runId> --reason "pilot review"
 # npm run start:orchestrator -- --pin <runId> --reason "watch"
 # npm run start:orchestrator -- --unpin <runId>
+# npm run start:orchestrator -- --label <runId> --reason pilot
+# npm run start:orchestrator -- --unlabel <runId> --reason pilot
 
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>

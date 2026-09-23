@@ -44,6 +44,7 @@ export interface RunSummary {
   approvalExpiresAt?: string;
   archivedAt?: string;
   pinnedAt?: string;
+  labels?: string[];
 }
 
 export interface AuditEvent {
@@ -81,6 +82,7 @@ export interface Run {
   approvalExpiresAt?: string;
   archivedAt?: string;
   pinnedAt?: string;
+  labels?: string[];
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -187,6 +189,20 @@ export function unpinRun(id: string, reason?: string) {
   return request<{ run: Run }>(`/runs/${id}/unpin`, {
     method: "POST",
     body: JSON.stringify(reason ? { reason } : {}),
+  });
+}
+
+export function labelRun(id: string, label: string) {
+  return request<{ run: Run }>(`/runs/${id}/label`, {
+    method: "POST",
+    body: JSON.stringify({ label }),
+  });
+}
+
+export function unlabelRun(id: string, label: string) {
+  return request<{ run: Run }>(`/runs/${id}/unlabel`, {
+    method: "POST",
+    body: JSON.stringify({ label }),
   });
 }
 
