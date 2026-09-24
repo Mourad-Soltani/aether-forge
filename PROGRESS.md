@@ -3,9 +3,9 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 35 — 2026-09-24)
+## Current Status (Session 36 — 2026-09-24)
 
-> **v0.1 control-plane complete.** Session 35 adds label-filtered run lists. Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
+> **v0.1 control-plane complete.** Session 36 adds combined list query filters (status, workflow, label, id substring, archived). Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -55,6 +55,7 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [x] Session 33 — operator pin / unpin (`pinnedAt`, CLI `--pin` / `--unpin`, `POST /runs/:id/pin|unpin`)
 - [x] Session 34 — operator labels (`labels[]`, CLI `--label` / `--unlabel`, `POST /runs/:id/label|unlabel`)
 - [x] Session 35 — filter run lists by label (`GET /runs?label=`, CLI `--list --label`, dashboard dropdown)
+- [x] Session 36 — combined list query (`status`, `workflow`, `label`, `q`, `archived`) on API, CLI, dashboard
 - [ ] First GitHub Issues *executed* against a real repo (workflow exists; needs human-supplied **rotated** token **outside git/chat**)
 - [ ] Slack live path when operator sets `SLACK_WEBHOOK_URL` locally
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
@@ -123,8 +124,15 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - CLI `--list --label` shares `listRunSummaries`. `--label <runId>` (mutate) is still a separate command.
 - Chat-pasted PATs remain unusable for live `wf.github`.
 
+## Decisions (Session 36)
+- `filterRunSummaries` ANDs optional `status`, `workflow`, `label`, `q` (case-insensitive id substring), and `archived` (`all` default | `hide` | `only`).
+- Invalid status / archived values throw (API 400). Label validation still uses `normalizeLabel`.
+- Default API list remains unfiltered on archived so existing clients keep seeing every file.
+- Dashboard now sends the same query params; client-side filter remains a safety net.
+- Chat-pasted PATs remain unusable for live `wf.github`.
+
 ## Handoff for next session
-Session 35 ships label-filtered lists (API, CLI, dashboard). Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
+Session 36 ships combined list query filters. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
 Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
 
 ```bash
@@ -162,7 +170,8 @@ npm run dev:web
 # npm run start:orchestrator -- --unpin <runId>
 # npm run start:orchestrator -- --label <runId> --reason pilot
 # npm run start:orchestrator -- --unlabel <runId> --reason pilot
-# npm run start:orchestrator -- --list --label pilot
+# npm run start:orchestrator -- --list --label pilot --status completed --archived hide
+# npm run start:orchestrator -- --list --q run_ --workflow wf.hello
 
 # npm run start:orchestrator -- --workflow retry-ok
 # npm run start:orchestrator -- --retry-failed <runId>
@@ -174,7 +183,7 @@ npm run dev:web
 API:
 - `GET /health` (open; reports `authRequired`)
 - `GET /workflows` (gated)
-- `GET /runs`
+- `GET /runs` (`?label=&status=&workflow=&q=&archived=`)
 - `GET /runs/:id`
 - `GET /runs/:id/audit` (`aether-audit-v1` bundle)
 - `POST /runs` `{ "workflowId": "wf.hitl" | "wf.github" | "wf.slack" | "wf.files" | "wf.parallel" | "wf.vertical" | ... }`

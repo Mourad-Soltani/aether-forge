@@ -312,3 +312,11 @@ Dry-run GitHub results still go through HITL when `autoApprove` is false.
 - Dashboard list adds a label dropdown (client-side over the same summaries).
 - Invalid label strings still throw from `normalizeLabel` (API 400).
 - Chat-pasted PATs remain unusable for live `wf.github`.
+
+## Session 36 — Combined list query
+- `src/query.ts` `filterRunSummaries` ANDs `label`, `status`, `workflow`, `q`, `archived`.
+- `GET /runs` accepts those query params after the stale-approval sweep.
+- CLI `--list` accepts the same flags. `--label` after `--list` is a filter, not a mutate.
+- Dashboard `fetchRuns` forwards the filters; id substring box added.
+- Default `archived=all` keeps prior API behavior. Dashboard uses `hide` unless "show archived".
+- Chat-pasted PATs remain unusable for live `wf.github`.

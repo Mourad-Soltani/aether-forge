@@ -104,8 +104,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-export function fetchRuns() {
-  return request<{ runs: RunSummary[] }>("/runs");
+export function fetchRuns(params?: {
+  label?: string;
+  status?: string;
+  workflow?: string;
+  q?: string;
+  archived?: string;
+}) {
+  const qs = new URLSearchParams();
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v && v !== "all") qs.set(k, v);
+    }
+  }
+  const suffix = qs.size ? `?${qs.toString()}` : "";
+  return request<{ runs: RunSummary[] }>(`/runs${suffix}`);
 }
 
 export function fetchRun(id: string) {

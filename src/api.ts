@@ -4,7 +4,8 @@ import { buildAuditBundle } from "./export.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
 import { pinRun, unpinRun } from "./pin.js";
-import { filterByLabel, labelRun, unlabelRun } from "./label.js";
+import { labelRun, unlabelRun } from "./label.js";
+import { filterRunSummaries } from "./query.js";
 import { cancelRun, executeWorkflow, expireRun, expireStaleRuns, resumeRun, retryFailedRun } from "./orchestrator.js";
 import { listRunSummaries, loadRun } from "./persist.js";
 import { resolveWorkflow, workflowRegistry } from "./workflows/registry.js";
@@ -88,8 +89,14 @@ export async function handleRequest(
 
     if (method === "GET" && pathname === "/runs") {
       await expireStaleRuns();
-      const label = url.searchParams.get("label") ?? undefined;
-      json(res, 200, { runs: filterByLabel(await listRunSummaries(), label) });
+      const runs = filterRunSummaries(await listRunSummaries(), {
+        label: url.searchParams.get("label") ?? undefined,
+        status: url.searchParams.get("status") ?? undefined,
+        workflow: url.searchParams.get("workflow") ?? undefined,
+        q: url.searchParams.get("q") ?? undefined,
+        archived: url.searchParams.get("archived") ?? undefined,
+      });
+      json(res, 200, { runs });
       return;
     }
 
@@ -229,7 +236,7 @@ export async function handleRequest(
     notFound(res);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = message.includes("Unknown workflow") || message.includes("Invalid run") || message.includes("Note text is required") || message.includes("Label is required") || message.includes("Label must match")
+    const status = message.includes("Unknown workflow") || message.includes("Invalid run") || message.includes("Note text is required") || message.includes("Label is required") || message.includes("Label must match") || message.includes("Unknown status") || message.includes("archived must be")
       ? 400
       : message.includes("expected awaiting_approval") || message.includes("expected failed") || message.includes("already archived") || message.includes("not archived") || message.includes("expected a terminal") || message.includes("already pinned") || message.includes("not pinned") || message.includes("already has label") || message.includes("does not have label") || message.includes("already has 8 labels")
         ? 409

@@ -12,7 +12,8 @@ import { resolveWorkflow } from "./workflows/registry.js";
 import { archiveRun, unarchiveRun } from "./archive.js";
 import { noteRun } from "./note.js";
 import { pinRun, unpinRun } from "./pin.js";
-import { filterByLabel, labelRun, unlabelRun } from "./label.js";
+import { labelRun, unlabelRun } from "./label.js";
+import { filterRunSummaries } from "./query.js";
 
 export type { RunSummary };
 export { summarizeRun };
@@ -482,7 +483,7 @@ function printUsage(): void {
 
 Usage:
   npm run start:orchestrator [-- --workflow <hello|hitl|http|parallel|wf.*>]
-  npm run start:orchestrator -- --list [--label <tag>]
+  npm run start:orchestrator -- --list [--label <tag>] [--status <status>] [--workflow <id>] [--q <id-substr>] [--archived all|hide|only]
   npm run start:orchestrator -- --approve <runId> [--reason "..."]
   npm run start:orchestrator -- --reject <runId> [--reason "..."]
   npm run start:orchestrator -- --cancel <runId> [--reason "..."]
@@ -509,7 +510,7 @@ Usage:
 --note appends an operator comment to the audit trail (any status; does not change status).
 --pin / --unpin mark a run so lists sort it first. Status unchanged.
 --label / --unlabel attach a short operator tag (max 8 per run). Status unchanged.
---list --label <tag> prints only runs that carry that tag.
+--list filters AND together: --label, --status, --workflow, --q (id substring), --archived.
 `);
 }
 
@@ -528,14 +529,24 @@ async function main() {
     return;
   }
   if (argv.includes("--list")) {
-    const labelFlag = argv.indexOf("--label");
-    const labelFilter = labelFlag >= 0 && !argv[labelFlag + 1]?.startsWith("--")
-      ? argv[labelFlag + 1]
-      : undefined;
-    const rows = filterByLabel(await listRunSummaries(), labelFilter);
+    const flag = (name: string): string | undefined => {
+      const i = argv.indexOf(name);
+      if (i < 0) return undefined;
+      const v = argv[i + 1];
+      if (!v || v.startsWith("--")) return undefined;
+      return v;
+    };
+    const query = {
+      label: flag("--label"),
+      status: flag("--status"),
+      workflow: flag("--workflow"),
+      q: flag("--q"),
+      archived: flag("--archived"),
+    };
+    const rows = filterRunSummaries(await listRunSummaries(), query);
     const ids = rows.map((r) => r.id);
     if (jsonMode) {
-      console.log(JSON.stringify({ ok: true, runs: ids, labels: labelFilter ? [labelFilter] : undefined }));
+      console.log(JSON.stringify({ ok: true, runs: ids, query }));
       return;
     }
     console.log(ids.length ? ids.join("\n") : "(no runs yet)");

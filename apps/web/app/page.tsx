@@ -45,11 +45,18 @@ export default function HomePage() {
   const [live, setLive] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [labelFilter, setLabelFilter] = useState("all");
+  const [idQuery, setIdQuery] = useState("");
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
   async function refresh() {
     try {
-      const data = await fetchRuns();
+      const data = await fetchRuns({
+        label: labelFilter,
+        status: statusFilter,
+        workflow: workflowFilter,
+        q: idQuery,
+        archived: showArchived ? "all" : "hide",
+      });
       setRuns(data.runs);
       setError(null);
       setUpdatedAt(new Date().toISOString());
@@ -62,11 +69,14 @@ export default function HomePage() {
 
   useEffect(() => {
     setToken(getStoredApiToken());
-    void refresh();
     void fetchWorkflows()
       .then((d) => setWorkflows(d.workflows))
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [statusFilter, workflowFilter, labelFilter, showArchived, idQuery]);
 
   function saveToken() {
     setStoredApiToken(token);
@@ -241,6 +251,15 @@ export default function HomePage() {
               </option>
             ))}
           </select>
+        </label>
+        <label className="muted">
+          id{" "}
+          <input
+            value={idQuery}
+            onChange={(e) => setIdQuery(e.target.value)}
+            placeholder="substring"
+            size={12}
+          />
         </label>
         <label className="muted">
           <input
