@@ -3,9 +3,11 @@
 ## Project Goal
 Private multi-agent control plane for enterprises. Turns tools & data into auditable, human-governed agent workflows. Public milestones: ROADMAP.md.
 
-## Current Status (Session 36 — 2026-09-24)
+## Current Status (CLOSED — 2026-09-24)
 
-> **v0.1 control-plane complete.** Session 36 adds combined list query filters (status, workflow, label, id substring, archived). Live GitHub still blocked on a rotated token supplied *outside* chat. A PAT pasted into this session is compromised — do not use it.
+> **PROJECT CLOSED for daily-builder.** v0.1 control-plane is complete. Active flagship is **Tokenpulse** (`Mourad-Soltani/tokenpulse`). Do not open new feature sessions here. Optional operator-only live GitHub/Slack remain human env tasks, not daily-builder work.
+>
+> Last code session was Session 36 (combined list query filters). A PAT that appeared in chat is compromised — rotate; do not use it.
 - [x] Repository created
 - [x] Initial structure + core docs
 - [x] Define detailed architecture & agent runtime MVP (v0.1 in ARCHITECTURE.md)
@@ -61,10 +63,9 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - [ ] Landing-page copy + pilot packaging (after one recorded live GitHub proof)
 
 ## Next Up (highest priority)
-1. Execute `wf.github` once with a human-supplied **rotated**, least-privilege token **outside git/chat**. Confirm HITL pause → approve → issue URL in audit. Do not reuse any PAT that appeared in a chat prompt (including this session).
-2. Optional live Slack path when operator sets `SLACK_WEBHOOK_URL` locally (do not commit the URL). Dry-run is the default proof path.
-3. After one live GitHub proof: landing-page copy + pilot packaging (do not start external outreach until demo is recorded).
-4. Optional: live `wf.llm` / `wf.vertical` when operator sets a provider key locally (do not commit keys). Nested/DAG dependencies beyond consecutive waves still deferred.
+1. **None for daily-builder.** Active project is Tokenpulse.
+2. Optional human-only: live `wf.github` / Slack with rotated secrets **outside chat** (not automation work).
+3. Optional human-only: landing/pilot packaging if ever needed for sale materials.
 
 ## Decisions So Far
 - Stack: TypeScript (Node) for orchestrator + core, Next.js for dashboard.
@@ -132,8 +133,8 @@ Private multi-agent control plane for enterprises. Turns tools & data into audit
 - Chat-pasted PATs remain unusable for live `wf.github`.
 
 ## Handoff for next session
-Session 36 ships combined list query filters. Live GitHub/Slack/LLM remain operator-env only. Any PAT pasted into chat is compromised — do not use it.
-Public narrative: control-plane MVP; see ROADMAP.md. Maintainer detail stays in this file.
+**Closed.** Daily builder must work only on Tokenpulse (`Mourad-Soltani/tokenpulse`). Aether Forge is maintenance-only.
+Public narrative: control-plane MVP complete; see ROADMAP.md.
 
 ```bash
 npm install
